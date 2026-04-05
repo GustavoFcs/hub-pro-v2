@@ -13,7 +13,7 @@ const hubItems = [
     title: "Banco de Questões",
     category: "01 / Exploração",
     description: "Milhares de questões processadas por IA com filtros avançados.",
-    href: "/app/banco-questoes",
+    href: "/banco-questoes",
     span: "col-span-2 row-span-2",
     id: "01"
   },
@@ -21,7 +21,7 @@ const hubItems = [
     title: "Minha Lista",
     category: "02 / Personalização",
     description: "Sua coleção privada de questões para estudo focado.",
-    href: "/app/minha-lista",
+    href: "/minha-lista",
     span: "col-span-1 row-span-1",
     id: "02"
   },
@@ -29,7 +29,7 @@ const hubItems = [
     title: "Vocalab",
     category: "03 / Integração",
     description: "Ferramentas externas integradas para expansão de conhecimento.",
-    href: "/app/vocalab",
+    href: "/vocalab",
     span: "col-span-1 row-span-2",
     id: "03"
   },
@@ -37,7 +37,7 @@ const hubItems = [
     title: "Dashboard",
     category: "04 / Analytics",
     description: "Acompanhe sua evolução com gráficos e estatísticas detalhadas.",
-    href: "/app/dashboard",
+    href: "/dashboard",
     span: "col-span-1 row-span-1",
     id: "04"
   },

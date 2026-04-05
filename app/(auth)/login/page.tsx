@@ -21,7 +21,7 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       await login(email)
-      router.push('/app/banco-questoes')
+      router.push('/banco-questoes')
     } catch (error) {
       console.error(error)
     } finally {
