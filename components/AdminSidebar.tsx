@@ -4,25 +4,30 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
 import { 
   LayoutDashboard, 
   UploadCloud, 
   FileEdit, 
   Key, 
   LogOut,
-  Settings,
-  ShieldCheck
+  ArrowLeft,
+  ShieldCheck,
+  Brain,
+  GraduationCap,
 } from 'lucide-react'
 
 const adminMenuItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Upload de Prova', href: '/admin/upload-prova', icon: UploadCloud },
   { label: 'Gerenciar Provas', href: '/admin/gerenciar-provas', icon: FileEdit },
-  { label: 'API Keys', href: '/admin/configuracoes', icon: Key },
+  { label: 'Revisão de IA', href: '/admin/revisao-ia', icon: Brain },
+  { label: 'Simulados', href: '/minha-lista', icon: GraduationCap },
 ]
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const { logout } = useAuth()
 
   return (
     <aside className="w-64 h-screen fixed left-0 top-0 bg-[#0a0a0a] border-r border-accent flex flex-col p-6 z-50">
@@ -56,13 +61,14 @@ export function AdminSidebar() {
 
       <div className="mt-auto flex flex-col gap-2">
         <Link
-          href="/app"
+          href="/banco-questoes"
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-[#999999] hover:bg-[#1a1a1a] hover:text-white transition-all duration-300"
         >
-          <Settings size={18} />
+          <ArrowLeft size={18} />
           Voltar ao App
         </Link>
         <button
+          onClick={logout}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-all duration-300 w-full text-left"
         >
           <LogOut size={18} />

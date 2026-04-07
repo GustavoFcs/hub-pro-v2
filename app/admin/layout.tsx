@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { AdminSidebar } from '@/components/AdminSidebar'
+import { SimuladoFloatingBar } from '@/components/simulado/SimuladoFloatingBar'
 
 export default function AdminLayout({
   children,
@@ -16,6 +17,7 @@ export default function AdminLayout({
           {children}
         </div>
       </main>
+      <SimuladoFloatingBar />
     </div>
   )
 }

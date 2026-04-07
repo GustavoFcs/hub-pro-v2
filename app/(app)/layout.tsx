@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react'
+import { SimuladoFloatingBar } from '@/components/simulado/SimuladoFloatingBar'
 
 export default function AppLayout({
   children,
@@ -12,6 +13,7 @@ export default function AppLayout({
       <main className="flex-1 w-full mx-auto">
         {children}
       </main>
+      <SimuladoFloatingBar />
     </div>
   )
 }

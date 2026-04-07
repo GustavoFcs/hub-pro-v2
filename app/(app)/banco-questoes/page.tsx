@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { QuestionCard } from "@/components/QuestionCard"
@@ -22,7 +22,14 @@ import {
   Zap,
   ArrowLeft,
   Eye,
+  EyeOff,
+  Save,
+  FolderOpen,
+  Loader2,
+  ListPlus,
 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import type { Materia, Subtopico, Instituicao, QuestaoCompleta } from "@/lib/supabase/types"
 
 /* ── Types ──────────────────────────────────────────────── */
 type TabId = "materia" | "instituicao" | "ano" | "dificuldade" | "restritos"
@@ -36,84 +43,27 @@ const FILTER_TABS: Array<{ id: TabId; label: string; icon: typeof BookOpen }> = 
   { id: "restritos", label: "Restritos", icon: ShieldAlert },
 ]
 
-/* ── Filter items with optional sub-items ───────────────── */
 type FilterNode = { label: string; children?: string[] }
 
-const FILTER_ITEMS: Record<TabId, FilterNode[]> = {
-  materia: [
-    { label: "Matemática", children: ["Funções", "Progressões", "Geometria", "Trigonometria", "Álgebra Linear"] },
-    { label: "Física", children: ["Cinemática", "Dinâmica", "Termodinâmica", "Óptica", "Eletromagnetismo"] },
-    { label: "Química", children: ["Estequiometria", "Físico-Química", "Orgânica", "Inorgânica"] },
-    { label: "Português", children: ["Interpretação", "Gramática", "Redação", "Literatura"] },
-    { label: "Inglês", children: ["Reading", "Grammar", "Vocabulary"] },
-  ],
-  instituicao: [
-    { label: "ENEM" },
-    { label: "FUVEST" },
-    { label: "UNICAMP" },
-    { label: "UERJ" },
-    { label: "UFRJ" },
-  ],
-  ano: [
-    { label: "2024" },
-    { label: "2023" },
-    { label: "2022" },
-    { label: "2021" },
-    { label: "2020" },
-  ],
-  dificuldade: [
-    { label: "Fácil" },
-    { label: "Médio" },
-    { label: "Difícil" },
-  ],
-  restritos: [],
+const DIFICULDADE_ITEMS: FilterNode[] = [
+  { label: "Fácil" },
+  { label: "Médio" },
+  { label: "Difícil" },
+  { label: "Muito Difícil" },
+]
+
+const DIFFICULTY_MAP: Record<string, 'facil' | 'medio' | 'dificil' | 'muito_dificil'> = {
+  'Fácil': 'facil',
+  'Médio': 'medio',
+  'Difícil': 'dificil',
+  'Muito Difícil': 'muito_dificil',
 }
 
-/* ── Mock questions ─────────────────────────────────────── */
-const mockQuestions = [
-  {
-    id: "1",
-    topic: "Matemática",
-    subtopic: "Funções Quadráticas",
-    difficulty: "Médio" as const,
-    year: 2024,
-    text: "Dada a função quadrática f(x) = x² - 4x + 3, determine o valor mínimo da função e as coordenadas do vértice da parábola.",
-    alternatives: [
-      { id: "a", text: "Vértice (2, -1), Valor mínimo -1" },
-      { id: "b", text: "Vértice (-2, 1), Valor mínimo 1" },
-      { id: "c", text: "Vértice (2, 1), Valor mínimo 1" },
-      { id: "d", text: "Vértice (0, 3), Valor mínimo 3" },
-    ],
-  },
-  {
-    id: "2",
-    topic: "Física",
-    subtopic: "Cinemática",
-    difficulty: "Fácil" as const,
-    year: 2023,
-    text: "Um móvel realiza um movimento retilíneo uniforme com velocidade constante de 20 m/s. Qual a distância percorrida após 10 segundos?",
-    alternatives: [
-      { id: "a", text: "100 metros" },
-      { id: "b", text: "200 metros" },
-      { id: "c", text: "300 metros" },
-      { id: "d", text: "400 metros" },
-    ],
-  },
-  {
-    id: "3",
-    topic: "Química",
-    subtopic: "Estequiometria",
-    difficulty: "Difícil" as const,
-    year: 2024,
-    text: "Ao reagir 10g de carbonato de cálcio com ácido clorídrico em excesso, calcule o volume de CO₂ produzido nas CNTP.",
-    alternatives: [
-      { id: "a", text: "2,24 L" },
-      { id: "b", text: "1,12 L" },
-      { id: "c", text: "3,36 L" },
-      { id: "d", text: "4,48 L" },
-    ],
-  },
-]
+interface FilterData {
+  materias: Array<Materia & { subtopicos: Subtopico[] }>
+  instituicoes: Instituicao[]
+  anos: number[]
+}
 
 /* ══════════════════════════════════════════════════════════ */
 
@@ -125,7 +75,97 @@ export default function BancoQuestoesPage() {
   const [restricted, setRestricted] = useState<Record<string, boolean>>({})
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [showQuestions, setShowQuestions] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading]         = useState(false)
+  const [isFiltersLoading, setIsFiltersLoading] = useState(true)
+  const [filterData, setFilterData] = useState<FilterData>({ materias: [], instituicoes: [], anos: [] })
+  const [questions, setQuestions] = useState<ReturnType<typeof mapQuestao>[]>([])
+
+  // Criar lista panel
+  const [criarOpen,     setCriarOpen]     = useState(false)
+  const [criarNome,     setCriarNome]     = useState('Minha lista')
+  const [criarFolderId, setCriarFolderId] = useState('')
+  const [folders,       setFolders]       = useState<{ id: string; nome: string }[]>([])
+  const [isSaving,      setIsSaving]      = useState(false)
+
+  // Load folders once
+  useEffect(() => {
+    fetch('/api/simulado/folders')
+      .then(r => r.ok ? r.json() : [])
+      .then(setFolders)
+      .catch(() => {})
+  }, [])
+
+  function mapQuestao(q: QuestaoCompleta) {
+    return {
+      id: q.id,
+      topic: q.materia?.nome ?? '—',
+      subtopic: q.subtopico?.nome ?? '—',
+      subject: q.materia?.nome,
+      institution: q.instituicao?.sigla ?? q.instituicao?.nome,
+      difficulty: q.dificuldade,
+      year: q.ano ?? 0,
+      text: q.enunciado,
+      alternatives: [...q.alternativas]
+        .sort((a, b) => a.ordem - b.ordem)
+        .map(a => ({ id: a.letra, text: a.texto })),
+      imagemUrl: q.imagem_url,
+      imagemSvg: q.imagem_svg,
+      imagemTipo: q.imagem_tipo,
+      videoUrl: q.videos?.[0]?.youtube_url ?? null,
+      videoTitulo: q.videos?.[0]?.titulo ?? null,
+      videoProfessor: q.videos?.[0]?.professor ?? null,
+      anulada: q.anulada,
+    }
+  }
+
+  // Derive FILTER_ITEMS from fetched data
+  const FILTER_ITEMS: Record<TabId, FilterNode[]> = useMemo(() => ({
+    materia: filterData.materias.map(m => ({
+      label: m.nome,
+      children: m.subtopicos.map(s => s.nome),
+    })),
+    instituicao: filterData.instituicoes.map(i => ({ label: i.sigla ?? i.nome })),
+    ano: filterData.anos.map(a => ({ label: String(a) })),
+    dificuldade: DIFICULDADE_ITEMS,
+    restritos: [],
+  }), [filterData])
+
+  // Fetch filter data on mount
+  useEffect(() => {
+    async function loadFilters() {
+      setIsFiltersLoading(true)
+      const supabase = createClient()
+
+      const [materiasRes, subtopicosRes, instsRes, anosRes] = await Promise.all([
+        supabase.from('materias').select('*').order('nome'),
+        supabase.from('subtopicos').select('*').order('nome'),
+        supabase.from('instituicoes').select('*').order('nome'),
+        supabase.from('questoes').select('ano').not('ano', 'is', null),
+      ])
+
+      const materias = (materiasRes.data ?? []) as Materia[]
+      const subtopicos = (subtopicosRes.data ?? []) as Subtopico[]
+      const instituicoes = (instsRes.data ?? []) as Instituicao[]
+
+      const anosSet = new Set<number>()
+      ;(anosRes.data ?? []).forEach((r: { ano: number | null }) => {
+        if (r.ano != null) anosSet.add(r.ano)
+      })
+      const anos = Array.from(anosSet).sort((a, b) => b - a)
+
+      setFilterData({
+        materias: materias.map(m => ({
+          ...m,
+          subtopicos: subtopicos.filter(s => s.materia_id === m.id),
+        })),
+        instituicoes,
+        anos,
+      })
+      setIsFiltersLoading(false)
+    }
+
+    loadFilters()
+  }, [])
 
   /* derived */
   const items = FILTER_ITEMS[activeTab]
@@ -172,13 +212,139 @@ export default function BancoQuestoesPage() {
     setExpanded((p) => ({ ...p, [label]: !p[label] }))
   }
 
-  function handleSolicitar() {
+  async function buildAndFetchQuestions() {
+    const supabase = createClient()
+
+    // Collect selected IDs from labels
+    const materiasNomes = selectedLabels.filter(l =>
+      filterData.materias.some(m => m.nome === l)
+    )
+    const subtopicosNomes = selectedLabels.filter(l =>
+      filterData.materias.some(m => m.subtopicos.some(s => s.nome === l))
+    )
+    const instituicoesLabels = selectedLabels.filter(l =>
+      filterData.instituicoes.some(i => (i.sigla ?? i.nome) === l)
+    )
+    const anosLabels = selectedLabels.filter(l =>
+      filterData.anos.includes(Number(l))
+    )
+    const dificuldadesLabels = selectedLabels.filter(l =>
+      DIFICULDADE_ITEMS.some(d => d.label === l)
+    )
+
+    // Restricted subtopics
+    const restrictedSubtopicosNomes = restrictedLabels.filter(l =>
+      filterData.materias.some(m => m.subtopicos.some(s => s.nome === l))
+    )
+
+    const materiaIds = filterData.materias
+      .filter(m => materiasNomes.includes(m.nome))
+      .map(m => m.id)
+
+    const subtopicosAll = filterData.materias.flatMap(m => m.subtopicos)
+    const subtopicosIds = subtopicosAll
+      .filter(s => subtopicosNomes.includes(s.nome))
+      .map(s => s.id)
+    const restrictedSubtopicosIds = subtopicosAll
+      .filter(s => restrictedSubtopicosNomes.includes(s.nome))
+      .map(s => s.id)
+
+    const instituicaoIds = filterData.instituicoes
+      .filter(i => instituicoesLabels.includes(i.sigla ?? i.nome))
+      .map(i => i.id)
+
+    const anos = anosLabels.map(Number)
+    const dificuldades = dificuldadesLabels.map(l => DIFFICULTY_MAP[l])
+
+    let q = supabase
+      .from('questoes')
+      .select(`
+        *,
+        materia:materias(*),
+        subtopico:subtopicos(*),
+        instituicao:instituicoes(*),
+        alternativas(*),
+        videos:videos_yt(*)
+      `)
+      .limit(50)
+
+    if (materiaIds.length > 0)             q = q.in('materia_id', materiaIds)
+    if (subtopicosIds.length > 0)          q = q.in('subtopico_id', subtopicosIds)
+    if (instituicaoIds.length > 0)         q = q.in('instituicao_id', instituicaoIds)
+    if (anos.length > 0)                   q = q.in('ano', anos)
+    if (dificuldades.length > 0)           q = q.in('dificuldade', dificuldades)
+    if (restrictedSubtopicosIds.length > 0)
+      q = q.not('subtopico_id', 'in', `(${restrictedSubtopicosIds.join(',')})`)
+
+    const { data } = await q
+    return ((data as unknown as QuestaoCompleta[]) ?? []).map(mapQuestao)
+  }
+
+  // Preview — loads + shows questions
+  async function handlePreview() {
     setIsLoading(true)
     setShowQuestions(false)
-    setTimeout(() => {
+    setCriarOpen(false)
+    try {
+      const mapped = await buildAndFetchQuestions()
+      setQuestions(mapped)
+    } catch {
+      setQuestions([])
+    } finally {
       setIsLoading(false)
       setShowQuestions(true)
-    }, 800)
+    }
+  }
+
+  // Criar lista — loads questions and opens the create panel
+  async function handleCriarLista() {
+    setIsLoading(true)
+    setShowQuestions(false)
+    setCriarOpen(false)
+    try {
+      const mapped = await buildAndFetchQuestions()
+      setQuestions(mapped)
+      if (mapped.length > 0) {
+        setCriarOpen(true)
+        setShowQuestions(true)
+      } else {
+        setShowQuestions(true) // show empty state
+      }
+    } catch {
+      setQuestions([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Save — persists the loaded questions as a simulado
+  async function handleSalvarCriar() {
+    if (!criarNome.trim() || questions.length === 0) return
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/simulado/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:       criarNome.trim(),
+          questionIds: questions.map(q => q.id),
+          folderId:    criarFolderId || undefined,
+        }),
+      })
+      if (res.ok) {
+        setCriarOpen(false)
+        setShowQuestions(false)
+        setQuestions([])
+        setCriarNome('Minha lista')
+        setCriarFolderId('')
+        window.location.href = '/minha-lista'
+      } else {
+        const err = await res.json()
+        alert(err.error ?? 'Erro ao salvar lista')
+      }
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   /* aggregate for dev panel */
@@ -189,18 +355,18 @@ export default function BancoQuestoesPage() {
     const anos: string[] = []
     const dificuldades: string[] = []
 
+    const allSubtopicos = filterData.materias.flatMap(m => m.subtopicos)
+
     for (const label of selectedLabels) {
-      const inMateria = FILTER_ITEMS.materia.find((n) => n.label === label)
-      if (inMateria) { materias.push(label); continue }
-      const parentMateria = FILTER_ITEMS.materia.find((n) => n.children?.includes(label))
-      if (parentMateria) { assuntos.push(label); continue }
-      if (FILTER_ITEMS.instituicao.find((n) => n.label === label)) { bancas.push(label); continue }
-      if (FILTER_ITEMS.ano.find((n) => n.label === label)) { anos.push(label); continue }
-      if (FILTER_ITEMS.dificuldade.find((n) => n.label === label)) { dificuldades.push(label); continue }
+      if (filterData.materias.some(m => m.nome === label)) { materias.push(label); continue }
+      if (allSubtopicos.some(s => s.nome === label)) { assuntos.push(label); continue }
+      if (filterData.instituicoes.some(i => (i.sigla ?? i.nome) === label)) { bancas.push(label); continue }
+      if (filterData.anos.includes(Number(label))) { anos.push(label); continue }
+      if (DIFICULDADE_ITEMS.some(d => d.label === label)) { dificuldades.push(label); continue }
     }
 
     return { materias, assuntos, bancas, anos, dificuldades, restritos: restrictedLabels }
-  }, [selectedLabels, restrictedLabels])
+  }, [selectedLabels, restrictedLabels, filterData])
 
   const allTags = [...selectedLabels, ...restrictedLabels.filter((r) => !selectedLabels.includes(r))]
 
@@ -209,13 +375,20 @@ export default function BancoQuestoesPage() {
     <div className="min-h-screen bg-[#0a0a0a] animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mx-auto w-full max-w-[1400px] px-6 py-8 md:px-10">
         {/* ── Top bar ─────────────────────────────────────── */}
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <Link
             href="/"
             className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:text-accent"
           >
             <ArrowLeft size={14} />
             Voltar ao lar
+          </Link>
+          <Link
+            href="/minha-lista"
+            className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:text-accent"
+          >
+            Minhas Listas
+            <ChevronRight size={14} />
           </Link>
         </div>
 
@@ -312,7 +485,9 @@ export default function BancoQuestoesPage() {
             {/* Item list */}
             <ScrollArea className="h-[340px]">
               <div className="divide-y divide-border/20">
-                {filteredItems.length === 0 ? (
+                {isFiltersLoading ? (
+                  <p className="px-5 py-10 text-center font-mono text-xs text-muted-foreground/50">Carregando...</p>
+                ) : filteredItems.length === 0 ? (
                   <p className="px-5 py-10 text-center font-mono text-xs text-muted-foreground/50">Nenhum item encontrado.</p>
                 ) : (
                   filteredItems.map((node) => {
@@ -390,7 +565,7 @@ export default function BancoQuestoesPage() {
             {/* Count */}
             <div className="rounded-[12px] border border-border/40 bg-[#111111] p-5">
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Questões encontradas</span>
-              <p className="mt-1 font-[var(--font-bebas)] text-5xl tracking-tight text-foreground">{showQuestions ? mockQuestions.length : 0}</p>
+              <p className="mt-1 font-[var(--font-bebas)] text-5xl tracking-tight text-foreground">{showQuestions ? questions.length : 0}</p>
             </div>
 
             {/* Tags */}
@@ -426,23 +601,106 @@ export default function BancoQuestoesPage() {
             <Button
               variant="outline"
               className="w-full border-border/40 text-muted-foreground hover:border-accent hover:text-accent font-mono text-[10px] uppercase tracking-[0.15em] h-10 gap-2"
-              onClick={() => setShowQuestions((p) => !p)}
+              onClick={handlePreview}
+              disabled={isLoading}
             >
-              <Eye size={14} />
-              {showQuestions ? "Ocultar preview" : "Pré-visualizar lista"}
+              {showQuestions
+                ? <><EyeOff size={14} /> Ocultar preview</>
+                : <><Eye size={14} /> Pré-visualizar lista</>
+              }
             </Button>
           </div>
         </div>
 
-        {/* ── CTA ─────────────────────────────────────────── */}
+        {/* ── Criar lista panel ─────────────────────────── */}
+        {criarOpen && (
+          <div className="mt-6 rounded-[12px] border border-accent/40 bg-[#111] p-5 flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ListPlus size={13} className="text-accent" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Criar lista &middot; {questions.length} quest{questions.length !== 1 ? 'ões' : 'ão'}
+                </span>
+              </div>
+              <button
+                onClick={() => setCriarOpen(false)}
+                className="text-muted-foreground hover:text-white transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Nome */}
+              <div className="flex-1 flex flex-col gap-1.5">
+                <label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                  Nome da lista
+                </label>
+                <input
+                  autoFocus
+                  value={criarNome}
+                  onChange={e => setCriarNome(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSalvarCriar() }}
+                  placeholder="Ex: Matemática IME 2024"
+                  className="bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-2 text-sm text-white
+                             placeholder:text-muted-foreground focus:outline-none focus:border-accent/50
+                             transition-colors font-mono"
+                />
+              </div>
+
+              {/* Pasta */}
+              <div className="flex flex-col gap-1.5 sm:w-52">
+                <label className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                  Salvar em
+                </label>
+                <div className="relative">
+                  <FolderOpen size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <select
+                    value={criarFolderId}
+                    onChange={e => setCriarFolderId(e.target.value)}
+                    className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg pl-8 pr-3 py-2
+                               text-sm text-muted-foreground focus:outline-none focus:border-accent/50
+                               transition-colors font-mono appearance-none"
+                  >
+                    <option value="">Sem pasta</option>
+                    {folders.map(f => (
+                      <option key={f.id} value={f.id}>{f.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSalvarCriar}
+                disabled={isSaving || !criarNome.trim()}
+                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-accent text-black text-xs
+                           font-mono font-bold uppercase tracking-wider hover:bg-accent/80 transition-colors
+                           disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                Salvar lista
+              </button>
+              <span className="text-xs text-muted-foreground font-mono">
+                {questions.length} quest{questions.length !== 1 ? 'ões' : 'ão'} serão salvas
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ── CTA ─────────────────────────────────────── */}
         <div className="mt-6">
           <Button
-            onClick={handleSolicitar}
+            onClick={handleCriarLista}
             disabled={isLoading}
             className="w-full h-12 rounded-[12px] bg-accent text-white text-sm font-mono uppercase tracking-[0.2em] hover:bg-[#E55A2B] transition-all duration-300 gap-2 shadow-[0_0_40px_rgba(229,90,43,0.12)]"
           >
-            <Zap size={16} />
-            {isLoading ? "Carregando..." : "Solicitar questões"}
+            {isLoading
+              ? <Loader2 size={16} className="animate-spin" />
+              : <ListPlus size={16} />
+            }
+            {isLoading ? 'Carregando...' : 'Criar lista'}
           </Button>
         </div>
 
@@ -460,11 +718,11 @@ export default function BancoQuestoesPage() {
           <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-4 flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent">Resultados</span>
-              <span className="font-mono text-[10px] text-muted-foreground">{mockQuestions.length} questões</span>
+              <span className="font-mono text-[10px] text-muted-foreground">{questions.length} questões</span>
             </div>
             <div className="flex flex-col gap-6">
-              {mockQuestions.map((q) => (
-                <QuestionCard key={q.id} question={q} />
+              {questions.map((q, idx) => (
+                <QuestionCard key={q.id} question={q} questionIndex={idx + 1} />
               ))}
             </div>
           </div>

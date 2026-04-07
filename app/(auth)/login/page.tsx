@@ -13,17 +13,27 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
+  const [error, setError] = useState<string | null>(null)
+  const { login, profile } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
     try {
-      await login(email)
-      router.push('/banco-questoes')
-    } catch (error) {
-      console.error(error)
+      await login(email, password)
+      // Redireciona após o onAuthStateChange atualizar o profile
+      // Pequeno delay para o profile ser carregado
+      setTimeout(() => {
+        if (profile?.role === 'admin') {
+          router.push('/admin')
+        } else {
+          router.push('/banco-questoes')
+        }
+      }, 200)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao entrar. Tente novamente.')
     } finally {
       setIsLoading(false)
     }
@@ -82,7 +92,7 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center px-1">
                   <label className="text-[9px] font-bold text-accent uppercase tracking-widest">Senha</label>
-                  <Link href="#" className="text-[8px] font-medium text-muted-foreground uppercase hover:text-accent transition-colors">Esqueceu?</Link>
+                  <Link href="/forgot-password" className="text-[8px] font-medium text-muted-foreground uppercase hover:text-accent transition-colors">Esqueceu?</Link>
                 </div>
                 <div className="relative group">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={14} />
@@ -106,15 +116,23 @@ export default function LoginPage() {
               {isLoading ? 'Autenticando...' : 'Entrar no Sistema'}
               {!isLoading && <ArrowRight size={14} />}
             </Button>
+
+            {error && (
+              <p className="font-mono text-[11px] text-red-400 text-center leading-relaxed">
+                {error}
+              </p>
+            )}
           </form>
 
           {/* Footer */}
           <div className="pt-6 border-t border-border/30 text-center space-y-4">
             <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Ainda não tem uma conta?</p>
-            <Button variant="outline" className="w-full border-accent/20 text-accent hover:bg-accent hover:text-accent-foreground h-10 rounded-none font-bold text-[9px] uppercase tracking-widest transition-all">
-              <UserPlus size={14} className="mr-2" />
-              Criar conta agora
-            </Button>
+            <Link href="/register">
+              <Button variant="outline" className="w-full border-accent/20 text-accent hover:bg-accent hover:text-accent-foreground h-10 rounded-none font-bold text-[9px] uppercase tracking-widest transition-all">
+                <UserPlus size={14} className="mr-2" />
+                Criar conta agora
+              </Button>
+            </Link>
             
             <div className="flex items-center justify-center gap-2 text-[8px] text-muted-foreground font-mono uppercase tracking-tighter opacity-50">
               <ShieldCheck size={10} className="text-accent" />
