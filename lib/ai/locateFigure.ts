@@ -1,7 +1,7 @@
 ﻿// Usa o modelo de visão para localizar uma figura em uma página renderizada como PNG.
 // Retorna a bounding box em percentuais (0-100) ou null se não encontrar.
 
-import { getActiveAIConfig } from '@/lib/ai/config'
+import { getActiveAIConfig, getAIHeaders, getAIBaseURL } from '@/lib/ai/config'
 
 export type CropBox = {
   xPct: number  // left edge  (0-100)
@@ -18,23 +18,8 @@ async function callVisionAPI(
   questionNumber: number
 ): Promise<any | null> {
   const config = getActiveAIConfig()
-
-  const isOpenRouter = config.provider === 'openrouter'
-  const baseURL = isOpenRouter
-    ? 'https://openrouter.ai/api/v1'
-    : 'https://api.openai.com/v1'
-  const apiKey = isOpenRouter
-    ? process.env.OPENROUTER_API_KEY!
-    : process.env.OPENAI_API_KEY!
-
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${apiKey}`,
-    'Content-Type': 'application/json',
-  }
-  if (isOpenRouter) {
-    headers['HTTP-Referer'] = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    headers['X-OpenRouter-Title'] = 'Hub Pro'
-  }
+  const headers = getAIHeaders(config)
+  const baseURL = getAIBaseURL(config)
 
   const res = await fetch(`${baseURL}/chat/completions`, {
     method: 'POST',

@@ -10,9 +10,9 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex">
+    <div className="min-h-screen bg-background flex">
       <AdminSidebar />
-      <main className="flex-1 ml-64 p-12 bg-[#0a0a0a] min-h-screen">
+      <main className="flex-1 ml-64 p-12 bg-background min-h-screen">
         <div className="max-w-[1200px] mx-auto animate-in fade-in slide-in-from-left-4 duration-500">
           {children}
         </div>

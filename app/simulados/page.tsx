@@ -69,7 +69,7 @@ export default function SimuladosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mx-auto w-full max-w-[1200px] px-6 py-8 md:px-10">
 
         {/* Voltar */}
@@ -149,7 +149,7 @@ function SimuladoCard({
   const date = new Date(simulado.created_at).toLocaleDateString('pt-BR')
 
   return (
-    <div className="rounded-[12px] border border-white/10 bg-[#111] p-6
+    <div className="rounded-[12px] border border-white/10 bg-card p-6
                     hover:border-accent/40 transition-all duration-300">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
@@ -231,11 +231,11 @@ function ExportButton({ simuladoId, title }: { simuladoId: string; title: string
           difficulty: q.dificuldade,
           year: q.ano,
           institution: q.instituicao?.sigla ?? q.instituicao?.nome,
-          visualElement: q.imagem_url ? {
-            type: 'crop',
-            imageUrl: q.imagem_url,
-            description: '',
-          } : null,
+          visualElement: q.imagem_tipo === 'reconstruida' && q.imagem_svg
+            ? { type: 'svg', svgContent: q.imagem_svg }
+            : q.imagem_url
+              ? { type: 'crop', imageUrl: q.imagem_url, description: '' }
+              : null,
           anulada: (q as any).anulada ?? false,
         })),
       }

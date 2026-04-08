@@ -59,6 +59,7 @@ export type Questao = {
   imagem_tipo: 'crop' | 'reconstruida' | null
   imagem_url: string | null
   imagem_svg: string | null
+  crop_image_path: string | null
   gabarito: 'a' | 'b' | 'c' | 'd' | 'e' | null
   anulada: boolean
   created_at: string
@@ -276,7 +277,9 @@ export type Database = {
           imagem_tipo: 'crop' | 'reconstruida' | null
           imagem_url: string | null
           imagem_svg: string | null
+          crop_image_path: string | null
           gabarito: 'a' | 'b' | 'c' | 'd' | 'e' | null
+          anulada: boolean
           created_at: string
           updated_at: string
         }
@@ -294,7 +297,9 @@ export type Database = {
           imagem_tipo?: 'crop' | 'reconstruida' | null
           imagem_url?: string | null
           imagem_svg?: string | null
+          crop_image_path?: string | null
           gabarito?: 'a' | 'b' | 'c' | 'd' | 'e' | null
+          anulada?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -311,7 +316,9 @@ export type Database = {
           imagem_tipo?: 'crop' | 'reconstruida' | null
           imagem_url?: string | null
           imagem_svg?: string | null
+          crop_image_path?: string | null
           gabarito?: 'a' | 'b' | 'c' | 'd' | 'e' | null
+          anulada?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -514,6 +521,23 @@ export type Database = {
           provider?: string
           model?: string
           active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_config: {
+        Row: {
+          key: string
+          value: Record<string, string>
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          value?: Record<string, string>
+          updated_at?: string
+        }
+        Update: {
+          value?: Record<string, string>
           updated_at?: string
         }
         Relationships: []

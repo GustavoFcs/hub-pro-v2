@@ -29,13 +29,13 @@ export async function GET() {
 
   return NextResponse.json({
     provider: config.provider,
-    extractModel: config.model,
+    textModel: config.textModel,
     visionModel: config.visionModel,
+    svgModel: config.svgModel,
+    extractAsText: config.extractAsText,
     keys: {
       openrouter: hasKey(process.env.OPENROUTER_API_KEY),
       openai: hasKey(process.env.OPENAI_API_KEY),
-      anthropic: hasKey(process.env.ANTHROPIC_API_KEY),
-      gemini: hasKey(process.env.GOOGLE_AI_API_KEY),
     },
   })
 }

@@ -152,7 +152,7 @@ export default function SimuladoNovoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mx-auto w-full max-w-[1200px] px-6 py-8 md:px-10">
 
         {/* Voltar */}
@@ -181,7 +181,7 @@ export default function SimuladoNovoPage() {
             <select
               value={folderId}
               onChange={e => setFolderId(e.target.value)}
-              className="self-start text-xs bg-[#111] border border-white/10 rounded-lg px-3 py-2
+              className="self-start text-xs bg-card border border-white/10 rounded-lg px-3 py-2
                          text-muted-foreground focus:outline-none focus:border-accent/50
                          font-mono hover:border-accent/30 transition-colors"
             >
@@ -265,7 +265,7 @@ export default function SimuladoNovoPage() {
             {/* Sidebar de estatísticas */}
             <div className="flex flex-col gap-4">
               {/* Total */}
-              <div className="rounded-[12px] border border-white/10 bg-[#111] p-4">
+              <div className="rounded-[12px] border border-white/10 bg-card p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
                   Total
                 </p>
@@ -277,7 +277,7 @@ export default function SimuladoNovoPage() {
               </div>
 
               {/* Por dificuldade */}
-              <div className="rounded-[12px] border border-white/10 bg-[#111] p-4">
+              <div className="rounded-[12px] border border-white/10 bg-card p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">
                   Por dificuldade
                 </p>
@@ -306,7 +306,7 @@ export default function SimuladoNovoPage() {
               </div>
 
               {/* Por assunto */}
-              <div className="rounded-[12px] border border-white/10 bg-[#111] p-4">
+              <div className="rounded-[12px] border border-white/10 bg-card p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">
                   Por assunto
                 </p>
@@ -362,7 +362,7 @@ function SortableQuestionRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-start gap-3 rounded-[10px] border border-white/10 bg-[#111]
+      className="flex items-start gap-3 rounded-[10px] border border-white/10 bg-card
                  p-4 hover:border-accent/30 transition-all group"
     >
       {/* Drag handle */}

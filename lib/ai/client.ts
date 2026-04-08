@@ -4,7 +4,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import type { PreparedPdf } from '@/lib/pdf/preparePdf'
-import { getActiveAIConfig, type AIConfig } from '@/lib/ai/config'
+import { getActiveAIConfig, getAIHeaders, getAIBaseURL, type AIConfig } from '@/lib/ai/config'
 
 // Tipos publicos
 
@@ -96,7 +96,7 @@ export async function analyzeExam(
 ): Promise<AnalyzedPage[]> {
   const config = getActiveAIConfig()
 
-  console.log(`[AI] Iniciando extracao | Provider: ${config.provider} | Modelo: ${config.model}`)
+  console.log(`[AI] Iniciando extracao | Provider: ${config.provider} | Modelo: ${config.textModel}`)
 
   try {
     let pages: AnalyzedPage[]
@@ -139,22 +139,9 @@ async function analyzeWithOpenAICompatible(
   context: ExamContext,
   config: AIConfig
 ): Promise<AnalyzedPage[]> {
+  const headers = getAIHeaders(config)
+  const baseURL = getAIBaseURL(config)
   const isOpenRouter = config.provider === 'openrouter'
-  const baseURL = isOpenRouter
-    ? 'https://openrouter.ai/api/v1'
-    : 'https://api.openai.com/v1'
-  const apiKey = isOpenRouter
-    ? process.env.OPENROUTER_API_KEY!
-    : process.env.OPENAI_API_KEY!
-
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${apiKey}`,
-    'Content-Type': 'application/json',
-  }
-  if (isOpenRouter) {
-    headers['HTTP-Referer'] = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    headers['X-OpenRouter-Title'] = 'Hub Pro'
-  }
 
   let userContent: unknown[]
 
@@ -185,7 +172,7 @@ async function analyzeWithOpenAICompatible(
   }
 
   const bodyObj: Record<string, unknown> = {
-    model: config.model,
+    model: config.textModel,
     max_tokens: 32000,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -209,7 +196,7 @@ async function analyzeWithOpenAICompatible(
     console.error(`[AI] Erro HTTP ${res.status}:`, errBody)
     if (errBody.includes('File data is missing') || errBody.includes('file_data')) {
       throw new Error(
-        `Modelo "${config.model}" não suporta envio de PDF inline. ` +
+        `Modelo "${config.textModel}" não suporta envio de PDF inline. ` +
         `Use AI_EXTRACT_AS_TEXT=true no .env.local para habilitar extração de texto local.`
       )
     }
@@ -231,7 +218,7 @@ async function analyzeWithOpenAICompatible(
 
   const input = json.usage?.prompt_tokens ?? 0
   const output = json.usage?.completion_tokens ?? 0
-  console.log(`[AI Cost] ${config.model}: input=${input} output=${output} tokens | finish=${choice.finish_reason}`)
+  console.log(`[AI Cost] ${config.textModel}: input=${input} output=${output} tokens | finish=${choice.finish_reason}`)
 
   if (!raw) {
     console.error('[AI] Conteúdo vazio. Full choice:', JSON.stringify(choice).slice(0, 800))
@@ -254,7 +241,7 @@ async function analyzeWithAnthropic(
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
   const response = await client.messages.create({
-    model: config.model,
+    model: config.textModel,
     max_tokens: 16000,
     messages: [
       {
@@ -291,7 +278,7 @@ async function analyzeWithGemini(
   config: AIConfig
 ): Promise<AnalyzedPage[]> {
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
-  const model = genAI.getGenerativeModel({ model: config.model })
+  const model = genAI.getGenerativeModel({ model: config.textModel })
 
   const result = await model.generateContent([
     { inlineData: { mimeType: 'application/pdf', data: pdf.base64 } },
@@ -458,33 +445,21 @@ export async function scanGabaritoFromPdf(
   pdf: PreparedPdf
 ): Promise<{ number: number; answer: string }[]> {
   const config = getActiveAIConfig()
-  console.log(`[scanGabarito] Provider: ${config.provider} | Modelo: ${config.model}`)
+  console.log(`[scanGabarito] Provider: ${config.provider} | Modelo: ${config.textModel}`)
 
   try {
     let raw = '{"answers":[]}'
 
     if (config.provider === 'openrouter' || config.provider === 'openai') {
+      const headers = getAIHeaders(config)
+      const baseURL = getAIBaseURL(config)
       const isOpenRouter = config.provider === 'openrouter'
-      const baseURL = isOpenRouter
-        ? 'https://openrouter.ai/api/v1'
-        : 'https://api.openai.com/v1'
-      const apiKey = isOpenRouter
-        ? process.env.OPENROUTER_API_KEY!
-        : process.env.OPENAI_API_KEY!
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      }
-      if (isOpenRouter) {
-        headers['HTTP-Referer'] = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-        headers['X-OpenRouter-Title'] = 'Hub Pro Gabarito'
-      }
 
       const res = await fetch(`${baseURL}/chat/completions`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: config.model,
+          model: config.textModel,
           max_tokens: 4000,
           response_format: { type: 'json_object' },
           messages: [{
@@ -504,8 +479,8 @@ export async function scanGabaritoFromPdf(
 
     } else if (config.provider === 'anthropic') {
       const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
-      const response = await client.messages.create({
-        model: config.model,
+      const r2 = await client.messages.create({
+        model: config.textModel,
         max_tokens: 4000,
         messages: [{
           role: 'user',
@@ -515,19 +490,10 @@ export async function scanGabaritoFromPdf(
           ],
         }],
       })
-      raw = response.content
+      raw = r2.content
         .filter(b => b.type === 'text')
         .map(b => (b as { type: 'text'; text: string }).text)
         .join('')
-
-    } else if (config.provider === 'gemini') {
-      const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
-      const model = genAI.getGenerativeModel({ model: config.model })
-      const result = await model.generateContent([
-        { inlineData: { mimeType: 'application/pdf', data: pdf.base64 } },
-        GABARITO_PROMPT,
-      ])
-      raw = result.response.text()
     }
 
     const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()

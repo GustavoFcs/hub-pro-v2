@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { MathText } from '@/components/ui/MathText'
 import { DIFFICULTY_CONFIG, type Difficulty } from '@/lib/difficulty/calculator'
 import { useSimuladoStore } from '@/lib/simulado/store'
-import { Bookmark, BarChart2, PlayCircle, ExternalLink, ImageIcon, Check, Eye, EyeOff } from 'lucide-react'
+import { Bookmark, PlayCircle, ExternalLink, Check, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Alternative {
@@ -30,17 +30,29 @@ interface Question {
   imagemSvg?: string | null        // SVG reconstruído
   imagemTipo?: 'crop' | 'reconstruida' | null
   // Elemento visual estruturado
-  visualElement?: { type: string; imageUrl?: string | null; description?: string } | null
+  visualElement?: {
+    type: string
+    imageUrl?: string | null
+    svgContent?: string | null
+    description?: string
+  } | null
   // Vídeo YouTube
   videoUrl?: string | null
   videoTitulo?: string | null
   videoProfessor?: string | null
+  gabarito?: string | null
   anulada?: boolean
 }
 
 export function QuestionCard({ question, questionIndex }: { question: Question; questionIndex?: number }) {
   const [selectedAlternative, setSelectedAlternative] = useState<string | null>(null)
   const [showDetails, setShowDetails] = useState(false)
+  const [answered, setAnswered] = useState(false)
+
+  function handleResponder() {
+    if (!selectedAlternative || answered) return
+    setAnswered(true)
+  }
 
   // Normalizar dificuldade para chave do DIFFICULTY_CONFIG
   const diffKey = question.difficulty?.toLowerCase().replace(' ', '_').replace('á', 'a').replace('é', 'e') as Difficulty
@@ -52,14 +64,14 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
   const isAdded        = hasQuestion(question.id)
 
   return (
-    <Card className="bg-[#1a1a1a] border-accent/40 hover:border-accent transition-all duration-300 rounded-[12px] p-6 mb-4 group shadow-lg">
-      <CardHeader className="p-0 mb-4 flex flex-row items-start justify-between">
-        <div className="flex flex-col gap-1">
-          <h3 className="text-lg font-bold text-white group-hover:text-accent transition-colors duration-200">
+    <Card className="bg-card border-accent/40 hover:border-accent transition-all duration-300 rounded-[12px] p-4 mb-3 group shadow-lg">
+      <CardHeader className="p-0 mb-3 flex flex-row items-start justify-between">
+        <div className="flex flex-col gap-0.5">
+          <h3 className="text-base font-bold text-foreground group-hover:text-accent transition-colors duration-200">
             Questão {questionIndex ?? 1}
           </h3>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-[#999999] uppercase tracking-widest">
+            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
               {question.topic} | {question.year}
             </span>
           </div>
@@ -106,7 +118,7 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
             )}
             {question.difficulty && (
               <span className={cn(
-                'px-2 py-0.5 rounded text-[10px] font-mono border border-current/20',
+                'px-2 py-0.5 rounded text-[10px] font-mono border border-current/20 opacity-0 pointer-events-none select-none',
                 diffConfig?.bg ?? 'bg-white/5',
                 diffConfig?.color ?? 'text-muted-foreground',
               )}>
@@ -116,59 +128,83 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
           </div>
         )}
 
-        <div className="text-[15px] text-[#CCCCCC] leading-relaxed mb-6 font-medium">
+        <div className="question-font text-[13px] text-foreground leading-relaxed mb-3 font-medium">
           <MathText text={question.text} />
         </div>
 
-        {/* Elemento visual (imagem crop ou SVG reconstruído) */}
-        {question.imagemTipo === 'crop' && question.imagemUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={question.imagemUrl}
-            alt="Imagem da questão"
-            className="mb-6 max-w-full h-auto max-h-64 object-contain rounded-md border border-[#333] bg-white block"
-          />
-        )}
-
-        {question.imagemTipo === 'crop' && !question.imagemUrl && question.imagemSvg?.startsWith('[CROP_DESCRIPTION]:') && null}
-
-        {question.imagemTipo === 'reconstruida' && question.imagemSvg && (
-          <div
-            className="mb-6 rounded-md border border-[#333] bg-white p-3 overflow-auto max-h-64 inline-block max-w-full"
-            dangerouslySetInnerHTML={{ __html: question.imagemSvg }}
-          />
-        )}
-
+        {/* Elemento visual — crop */}
         {question.visualElement?.type === 'crop' && question.visualElement?.imageUrl && (
-          <img
-            src={question.visualElement.imageUrl}
-            alt={question.visualElement.description ?? 'Imagem da questão'}
-            className="w-full object-contain max-h-[350px] rounded-lg my-3"
-          />
+          <div className="mb-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={question.visualElement.imageUrl}
+              alt={question.visualElement.description ?? 'Imagem da questão'}
+              className="max-w-full h-auto max-h-56 object-contain rounded-lg border border-border block"
+            />
+          </div>
+        )}
+
+        {/* Elemento visual — SVG reconstruído */}
+        {question.visualElement?.type === 'svg' && question.visualElement?.svgContent && (
+          <div className="mb-3">
+            <div
+              className="question-svg-preview rounded-lg border border-border bg-white p-2"
+              dangerouslySetInnerHTML={{ __html: question.visualElement.svgContent }}
+            />
+            <p className="mt-1 text-[10px] text-muted-foreground font-mono italic">
+              Imagem reconstruída a partir de referência
+              {question.institution ? ` da ${question.institution}` : ''}
+              {question.year ? `, ${question.year}` : ''}
+            </p>
+          </div>
+        )}
+
+        {/* Fallback: crop pendente de reconstrução (nunca exposto publicamente) */}
+        {question.visualElement?.type === 'crop' &&
+         !question.visualElement?.imageUrl &&
+         !question.visualElement?.svgContent && (
+          <div className="mb-4 p-3 rounded-lg border border-yellow-400/20
+                          bg-yellow-400/5 flex items-center gap-2">
+            <span className="text-xs text-yellow-400">
+              ⚠ Figura pendente de reconstrução
+            </span>
+          </div>
         )}
 
         {/* Alternativas */}
-        <div className="flex flex-col gap-3 mb-8 ml-4">
+        <div className="flex flex-col gap-2 mb-4 ml-2">
           {question.alternatives.map((alt, index) => {
             const letter = String.fromCharCode(97 + index)
             const isSelected = selectedAlternative === alt.id
 
+            // Computed styles based on answered state
+            const isGabarito = answered && question.gabarito && alt.id === question.gabarito
+            const isWrong    = answered && isSelected && alt.id !== question.gabarito
+
             return (
               <button
                 key={alt.id}
-                onClick={() => setSelectedAlternative(alt.id)}
+                onClick={() => { if (!answered) setSelectedAlternative(alt.id) }}
                 className={cn(
-                  "flex items-center gap-4 text-sm transition-all duration-200 text-left group/alt",
-                  isSelected ? "text-accent" : "text-[#999999] hover:text-[#CCCCCC]"
+                  "flex items-center gap-3 text-sm transition-all duration-200 text-left",
+                  !answered && "group/alt cursor-pointer",
+                  answered && "cursor-default",
+                  isGabarito ? "text-green-400" :
+                  isWrong    ? "text-red-400" :
+                  answered   ? "text-muted-foreground opacity-40" :
+                  isSelected ? "text-accent" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <span className={cn(
-                  "flex items-center justify-center w-7 h-7 rounded-full border text-xs font-bold transition-all duration-200",
-                  isSelected ? "bg-accent border-accent text-black" : "border-[#333333] group-hover/alt:border-accent/50"
+                  "flex items-center justify-center w-6 h-6 rounded-full border text-xs font-bold transition-all duration-200 shrink-0",
+                  isGabarito ? "bg-green-500 border-green-500 text-white" :
+                  isWrong    ? "bg-red-500 border-red-500 text-white" :
+                  answered   ? "border-border opacity-40" :
+                  isSelected ? "bg-accent border-accent text-black" : "border-border group-hover/alt:border-accent/50"
                 )}>
                   {letter.toUpperCase()}
                 </span>
-                <span className="flex-1 font-medium">
+                <span className="flex-1 font-medium question-font text-[13px]">
                   <MathText text={alt.text} />
                 </span>
               </button>
@@ -177,30 +213,8 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
         </div>
 
         {/* Botões de Ação */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={() => {
-              if (isAdded) {
-                removeQuestion(question.id)
-              } else {
-                addQuestion(question)
-              }
-            }}
-            className={cn(
-              "transition-all duration-300 rounded-md font-semibold text-xs py-5 px-6 gap-2",
-              isAdded
-                ? "border-accent text-accent bg-accent/10 hover:bg-accent/20"
-                : "border-accent text-accent hover:bg-accent hover:text-black"
-            )}
-          >
-            {isAdded ? <Check size={14} /> : <Bookmark size={14} />}
-            {isAdded ? 'ADICIONADA' : 'ADICIONAR À LISTA'}
-          </Button>
-          <Button variant="outline" className="border-[#333333] text-[#999999] hover:bg-[#222222] hover:text-white transition-all duration-300 rounded-md font-semibold text-xs py-5 px-6 gap-2">
-            <BarChart2 size={14} />
-            VER GRÁFICO
-          </Button>
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* YouTube link — esquerda */}
           {question.videoUrl && (
             <a
               href={question.videoUrl}
@@ -208,17 +222,52 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
               rel="noopener noreferrer"
               className={cn(
                 'inline-flex items-center gap-2 border border-red-500/40 text-red-400',
-                'hover:bg-red-500/10 transition-all duration-200 rounded-md font-semibold text-xs py-5 px-6'
+                'hover:bg-red-500/10 transition-all duration-200 rounded-md font-semibold text-xs py-2 px-4'
               )}
               title={question.videoTitulo ?? 'Ver correção em vídeo'}
             >
-              <PlayCircle size={14} />
+              <PlayCircle size={13} />
               {question.videoProfessor ? `VER COM ${question.videoProfessor.toUpperCase().slice(0, 20)}` : 'VER CORREÇÃO'}
               <ExternalLink size={10} className="opacity-50" />
             </a>
           )}
-          <Button className="bg-accent text-white hover:bg-[#E55A2B] transition-all duration-300 rounded-md font-semibold text-xs py-5 px-8 ml-auto">
-            RESPONDER
+
+          <div className="flex-1" />
+
+          {/* Icon-only add-to-list button */}
+          <button
+            onClick={() => isAdded ? removeQuestion(question.id) : addQuestion(question)}
+            title={isAdded ? 'Remover da lista' : 'Adicionar à lista'}
+            className={cn(
+              "flex items-center justify-center w-8 h-8 rounded-md border transition-all duration-300",
+              isAdded
+                ? "border-accent text-accent bg-accent/10 hover:bg-accent/20"
+                : "border-accent/40 text-accent/60 hover:border-accent hover:text-accent hover:bg-accent/10"
+            )}
+          >
+            {isAdded ? <Check size={15} /> : <Bookmark size={15} />}
+          </button>
+
+          {/* RESPONDER */}
+          <Button
+            onClick={handleResponder}
+            className={cn(
+              "transition-all duration-300 rounded-md font-semibold text-xs py-2 px-5",
+              answered
+                ? selectedAlternative === question.gabarito
+                  ? "bg-green-600 text-white cursor-default hover:bg-green-600"
+                  : "bg-red-600 text-white cursor-default hover:bg-red-600"
+                : "bg-accent text-white hover:bg-accent/80"
+            )}
+          >
+            {answered
+              ? question.gabarito
+                ? selectedAlternative === question.gabarito
+                  ? '✓ Correta!'
+                  : `✗ Gabarito: ${question.gabarito.toUpperCase()}`
+                : 'Respondida'
+              : 'RESPONDER'
+            }
           </Button>
         </div>
       </CardContent>

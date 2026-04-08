@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  SkipForward,
+  PlayCircle,
   Check,
   X,
   GraduationCap,
@@ -29,11 +29,13 @@ type Question = {
   ano: number | null
   imagem_url: string | null
   imagem_tipo: string | null
+  imagem_svg: string | null
   anulada: boolean | null
   materia: { nome: string } | null
   subtopico: { nome: string } | null
   instituicao: { sigla: string | null; nome: string } | null
   alternativas: Alternative[]
+  videos: { youtube_url: string; titulo: string | null }[]
 }
 
 type SimuladoData = {
@@ -75,8 +77,8 @@ function QuestionItem({
   index: number
   attemptId: string
   response?: ResponseState
-  onAnswer: (questaoId: string, letra: string) => void
-  onSkip:   (questaoId: string) => void
+  onAnswer: (questaoId: string, letra: string) => Promise<void>
+  onSkip:   (questaoId: string) => Promise<void>
   simuladoId: string
 }) {
   const [answering, setAnswering] = useState(false)
@@ -90,36 +92,39 @@ function QuestionItem({
   async function handleAnswer(letra: string) {
     if (response || answering) return
     setAnswering(true)
-    onAnswer(question.id, letra)
-    setAnswering(false)
+    try {
+      await onAnswer(question.id, letra)
+    } finally {
+      setAnswering(false)
+    }
   }
 
   function altStyle(letra: string) {
-    if (!response) return 'border-white/10 hover:border-accent/40 hover:bg-accent/5 cursor-pointer'
-    if (response.pulada) return 'border-white/10 opacity-50'
+    if (!response) return 'border-border hover:border-accent/40 hover:bg-accent/5 cursor-pointer'
+    if (response.pulada) return 'border-border opacity-50'
 
     const isSelected = response.resposta === letra
     const isGabarito = response.gabarito === letra
 
     if (isGabarito) return 'border-green-500/60 bg-green-500/10 text-green-300'
     if (isSelected && !response.correta) return 'border-red-500/60 bg-red-500/10 text-red-300'
-    return 'border-white/10 opacity-40'
+    return 'border-border opacity-40'
   }
 
   return (
-    <div className="p-5 rounded-[12px] border border-white/10 bg-[#111] mb-4">
+    <div className="p-5 rounded-[12px] border border-border bg-card mb-4">
       {/* Number + tags */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <span className="font-mono text-[11px] text-accent font-bold">
           Q{index + 1}
         </span>
         {inst && (
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-white/5 text-muted-foreground border border-white/10">
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-muted/40 text-muted-foreground border border-border">
             {inst}
           </span>
         )}
         {question.ano && (
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-muted-foreground border border-white/10">
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-muted/40 text-muted-foreground border border-border">
             {question.ano}
           </span>
         )}
@@ -129,7 +134,7 @@ function QuestionItem({
           </span>
         )}
         {diffCfg && (
-          <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono', diffCfg.bg, diffCfg.color)}>
+          <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono opacity-0 pointer-events-none select-none', diffCfg.bg, diffCfg.color)}>
             {diffCfg.label}
           </span>
         )}
@@ -147,18 +152,31 @@ function QuestionItem({
       </div>
 
       {/* Enunciado */}
-      <div className="mb-4 text-sm leading-relaxed text-[#CCCCCC]">
+      <div className="question-font mb-4 text-sm leading-relaxed text-foreground">
         <MathText text={question.enunciado} />
       </div>
 
       {/* Imagem */}
       {question.imagem_tipo === 'crop' && question.imagem_url && question.imagem_url !== 'skipped' && (
-        <div className="my-3 rounded-lg overflow-hidden border border-white/10">
+        <div className="my-3 rounded-lg border border-border">
           <img
             src={question.imagem_url}
             alt="Figura da questão"
-            className="w-full object-contain max-h-[300px] bg-white"
+            className="w-full object-contain bg-white"
           />
+        </div>
+      )}
+      {question.imagem_tipo === 'reconstruida' && question.imagem_svg && (
+        <div className="my-3">
+          <div
+            className="rounded-lg border border-border bg-white p-4 flex items-center justify-center"
+            dangerouslySetInnerHTML={{ __html: question.imagem_svg }}
+          />
+          <p className="mt-1 text-[10px] text-muted-foreground font-mono italic">
+            Imagem reconstruída a partir de referência
+            {(question.instituicao?.sigla ?? question.instituicao?.nome) ? ` da ${question.instituicao?.sigla ?? question.instituicao?.nome}` : ''}
+            {question.ano ? `, ${question.ano}` : ''}
+          </p>
         </div>
       )}
 
@@ -175,7 +193,7 @@ function QuestionItem({
             )}
           >
             <span className="font-mono text-accent shrink-0 font-bold">{alt.letra.toUpperCase()})</span>
-            <MathText text={alt.texto} />
+            <span className="question-font"><MathText text={alt.texto} /></span>
             {response?.gabarito === alt.letra && (
               <Check size={14} className="text-green-400 ml-auto shrink-0 self-center" />
             )}
@@ -186,14 +204,16 @@ function QuestionItem({
         ))}
       </div>
 
-      {/* Ações */}
-      {!response && (
-        <button
-          onClick={() => onSkip(question.id)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-yellow-400 transition-colors font-mono"
+      {/* Link YouTube */}
+      {question.videos?.[0]?.youtube_url && (
+        <a
+          href={question.videos[0].youtube_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-accent transition-colors font-mono"
         >
-          <SkipForward size={12} /> Não sei / Pular
-        </button>
+          <PlayCircle size={12} /> Ver resolução
+        </a>
       )}
 
       {response?.pulada && (
@@ -313,9 +333,11 @@ export default function SimuladoResolvePage() {
           difficulty:   q.dificuldade,
           year:         q.ano,
           institution:  q.instituicao?.sigla ?? q.instituicao?.nome,
-          visualElement: (q.imagem_tipo === 'crop' && q.imagem_url)
-            ? { type: 'crop', imageUrl: q.imagem_url }
-            : null,
+          visualElement: q.imagem_tipo === 'reconstruida' && q.imagem_svg
+            ? { type: 'svg', svgContent: q.imagem_svg }
+            : (q.imagem_tipo === 'crop' && q.imagem_url)
+              ? { type: 'crop', imageUrl: q.imagem_url }
+              : null,
         })),
       }
       const res = await fetch('/api/simulado/export-pdf', {
@@ -362,7 +384,7 @@ export default function SimuladoResolvePage() {
   // ── Render ───────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 size={28} className="animate-spin text-accent" />
       </div>
     )
@@ -370,11 +392,11 @@ export default function SimuladoResolvePage() {
 
   if (!simulado) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4">
-        <GraduationCap size={48} className="text-white/10" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <GraduationCap size={48} className="text-muted-foreground/20" />
         <p className="text-sm text-muted-foreground font-mono">Simulado não encontrado.</p>
         <Link href="/minha-lista">
-          <Button variant="outline" className="border-white/10 text-muted-foreground hover:border-accent hover:text-accent text-xs">
+          <Button variant="outline" className="border-border text-muted-foreground hover:border-accent hover:text-accent text-xs">
             Voltar
           </Button>
         </Link>
@@ -383,7 +405,7 @@ export default function SimuladoResolvePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mx-auto w-full max-w-[900px] px-6 py-8 md:px-10">
 
         {/* Voltar */}
@@ -397,7 +419,7 @@ export default function SimuladoResolvePage() {
         {/* Header */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-3xl md:text-4xl font-[var(--font-bebas)] tracking-tight text-white">
+            <h1 className="text-3xl md:text-4xl font-[var(--font-bebas)] tracking-tight text-foreground">
               {simulado.titulo}
             </h1>
             <p className="text-xs text-muted-foreground mt-1 font-mono">
@@ -409,7 +431,7 @@ export default function SimuladoResolvePage() {
               variant="outline"
               onClick={() => exportPDF(false)}
               disabled={exporting}
-              className="border-white/10 text-muted-foreground hover:border-accent hover:text-accent text-xs gap-2"
+              className="border-border text-muted-foreground hover:border-accent hover:text-accent text-xs gap-2"
             >
               {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
               PDF sem gabarito
@@ -418,40 +440,13 @@ export default function SimuladoResolvePage() {
               variant="outline"
               onClick={() => exportPDF(true)}
               disabled={exporting}
-              className="border-white/10 text-muted-foreground hover:border-accent hover:text-accent text-xs gap-2"
+              className="border-border text-muted-foreground hover:border-accent hover:text-accent text-xs gap-2"
             >
               <Download size={12} />
               PDF com gabarito
             </Button>
           </div>
         </div>
-
-        {/* Stats bar */}
-        {total > 0 && (
-          <div className="mb-6 p-4 rounded-[12px] border border-white/10 bg-[#111]">
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm mb-3">
-              <span className="text-green-400 font-medium font-mono">
-                ✓ {correct.length} correta{correct.length !== 1 ? 's' : ''}
-              </span>
-              <span className="text-red-400 font-medium font-mono">
-                ✗ {wrong.length} errada{wrong.length !== 1 ? 's' : ''}
-              </span>
-              <span className="text-yellow-400 font-medium font-mono">
-                — {skipped.length} pulada{skipped.length !== 1 ? 's' : ''}
-              </span>
-              <span className="text-muted-foreground font-mono">
-                {total - answered.length} sem resposta
-              </span>
-              <span className="ml-auto text-accent font-bold font-mono">
-                {pct}%
-              </span>
-            </div>
-            <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden flex">
-              <div className="h-full bg-green-500 transition-all duration-300" style={{ width: `${correctPct}%` }} />
-              <div className="h-full bg-red-500 transition-all duration-300"   style={{ width: `${wrongPct}%` }} />
-            </div>
-          </div>
-        )}
 
         {/* Filtros + paginação */}
         <div className="flex flex-wrap items-center gap-3 mb-5">
@@ -461,14 +456,14 @@ export default function SimuladoResolvePage() {
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors disabled:opacity-30"
+            className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
           >
             <ChevronLeft size={14} />
           </button>
           <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors disabled:opacity-30"
+            className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
           >
             <ChevronRight size={14} />
           </button>
@@ -476,7 +471,7 @@ export default function SimuladoResolvePage() {
           <select
             value={filter}
             onChange={e => { setFilter(e.target.value as typeof filter); setPage(1) }}
-            className="text-[11px] bg-[#111] border border-white/10 rounded px-2 py-1
+            className="text-[11px] bg-card border border-border rounded px-2 py-1
                        text-muted-foreground focus:outline-none focus:border-accent/50 font-mono"
           >
             <option value="all">Todas ({total})</option>
@@ -489,7 +484,7 @@ export default function SimuladoResolvePage() {
           <select
             value={perPage}
             onChange={e => { setPerPage(Number(e.target.value)); setPage(1) }}
-            className="text-[11px] bg-[#111] border border-white/10 rounded px-2 py-1
+            className="text-[11px] bg-card border border-border rounded px-2 py-1
                        text-muted-foreground focus:outline-none focus:border-accent/50 font-mono"
           >
             <option value={5}>5 por página</option>
@@ -501,7 +496,7 @@ export default function SimuladoResolvePage() {
         {/* Lista de questões */}
         {pagedQs.length === 0 ? (
           <div className="flex flex-col items-center py-16 gap-2">
-            <GraduationCap size={36} className="text-white/10" />
+            <GraduationCap size={36} className="text-muted-foreground/20" />
             <p className="text-xs text-muted-foreground font-mono">Nenhuma questão neste filtro.</p>
           </div>
         ) : (
@@ -525,7 +520,7 @@ export default function SimuladoResolvePage() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="p-2 rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors disabled:opacity-30"
+              className="p-2 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
             >
               <ChevronLeft size={16} />
             </button>
@@ -537,7 +532,7 @@ export default function SimuladoResolvePage() {
                   'w-8 h-8 rounded text-xs font-mono transition-colors',
                   p === page
                     ? 'bg-accent text-black font-bold'
-                    : 'text-muted-foreground hover:bg-white/10 hover:text-white'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                 )}
               >
                 {p}
@@ -546,7 +541,7 @@ export default function SimuladoResolvePage() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="p-2 rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors disabled:opacity-30"
+              className="p-2 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
             >
               <ChevronRight size={16} />
             </button>

@@ -11,13 +11,17 @@ import { Progress } from '@/components/ui/progress'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { CropSelector } from '@/components/admin/CropSelector'
+import { SVGReconstructPanel } from '@/components/admin/SVGReconstructPanel'
 
 interface Instituicao { id: string; nome: string; sigla: string | null }
 interface VisualElement {
-  type: 'crop' | 'text_only'
+  type: 'crop' | 'svg' | 'text_only'
   description: string
   pageNumber?: number | null
   imageUrl?: string | null
+  cropImagePath?: string | null
+  svgContent?: string | null
+  reconstructed?: boolean
 }
 interface Alternative { letra: 'a' | 'b' | 'c' | 'd' | 'e'; texto: string }
 interface ReviewQuestion {
@@ -249,7 +253,7 @@ export default function UploadProvaPage() {
 
       {stage === 'upload' && (
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-[#111111] rounded-2xl border border-[#2a2a2a] p-6 space-y-4">
+          <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
             <h3 className="text-accent text-xs font-bold uppercase tracking-widest">INFORMAÇÕES DA PROVA</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-1 space-y-1">
@@ -278,7 +282,7 @@ export default function UploadProvaPage() {
 
           <div onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
             className={cn('relative border-2 border-dashed rounded-2xl p-16 transition-all duration-300 flex flex-col items-center justify-center gap-5',
-              dragActive ? 'border-accent bg-accent/5 scale-[1.01]' : 'border-accent/30 bg-[#111111] hover:border-accent/60')}>
+              dragActive ? 'border-accent bg-accent/5 scale-[1.01]' : 'border-accent/30 bg-card hover:border-accent/60')}>
             <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
               {pdfFile ? <FileText className="text-accent" size={28} /> : <UploadCloud className="text-accent" size={28} />}
             </div>
@@ -306,8 +310,8 @@ export default function UploadProvaPage() {
             </div>
           )}
           {processing && (
-            <div className="bg-[#1a1a1a] p-6 rounded-2xl border border-accent/20 space-y-3">
-              <div className="flex justify-between text-xs font-mono text-[#999]">
+            <div className="bg-secondary p-6 rounded-2xl border border-accent/20 space-y-3">
+              <div className="flex justify-between text-xs font-mono text-muted-foreground">
                 <span className="flex items-center gap-2"><Loader2 size={12} className="animate-spin text-accent" />{processStatus}</span>
                 <span className="text-accent">{Math.round(processProgress)}%</span>
               </div>
@@ -315,7 +319,7 @@ export default function UploadProvaPage() {
               <p className="text-[#555] text-[10px] font-mono uppercase tracking-widest text-center">Isso pode levar alguns minutos dependendo do número de páginas</p>
             </div>
           )}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-[#111111] border border-[#2a2a2a]">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-card border border-border">
             <div>
               <p className="text-[10px] font-mono text-[#555] uppercase tracking-widest mb-0.5">Modo de crop de figuras</p>
               <p className="text-xs text-[#777]">
@@ -354,7 +358,7 @@ export default function UploadProvaPage() {
 
       {stage === 'gabarito' && (
         <div className="space-y-6">
-          <div className="bg-[#111111] rounded-2xl border border-[#2a2a2a] p-6 space-y-3">
+          <div className="bg-card rounded-2xl border border-border p-6 space-y-3">
             <h3 className="text-accent text-xs font-bold uppercase tracking-widest">GABARITO OFICIAL</h3>
             <p className="text-[#777] text-xs font-mono">
               Faça upload do PDF do gabarito. A IA vai ler e atribuir as respostas às {questions.length} questões extraídas.
@@ -367,7 +371,7 @@ export default function UploadProvaPage() {
             onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag}
             onDrop={e => { e.preventDefault(); setDragActive(false); const f = e.dataTransfer.files?.[0]; if (f?.type === 'application/pdf') setGabaritoFile(f) }}
             className={cn('relative border-2 border-dashed rounded-2xl p-12 transition-all duration-300 flex flex-col items-center justify-center gap-4',
-              dragActive ? 'border-accent bg-accent/5' : 'border-accent/30 bg-[#111111] hover:border-accent/60')}
+              dragActive ? 'border-accent bg-accent/5' : 'border-accent/30 bg-card hover:border-accent/60')}
           >
             <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
               {gabaritoFile ? <FileText className="text-accent" size={22} /> : <UploadCloud className="text-accent" size={22} />}
@@ -396,10 +400,9 @@ export default function UploadProvaPage() {
           )}
 
           {scanningGab && (
-            <div className="bg-[#1a1a1a] p-6 rounded-2xl border border-accent/20 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-mono text-[#999]">
-                <Loader2 size={12} className="animate-spin text-accent" /> Escaneando gabarito com IA...
-              </div>
+            <div className="bg-secondary p-6 rounded-2xl border border-accent/20 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+                <Loader2 size={12} className="animate-spin text-accent" /> Escaneando gabarito com IA...</div>
               <Progress value={undefined} className="h-1.5 bg-black" />
             </div>
           )}
@@ -438,7 +441,7 @@ export default function UploadProvaPage() {
 
       {stage === 'reviewing' && (
         <div className="space-y-6">
-          <div className="bg-[#111111] rounded-2xl border border-[#2a2a2a] p-5 flex flex-wrap gap-6 items-center justify-between">
+          <div className="bg-card rounded-2xl border border-border p-5 flex flex-wrap gap-6 items-center justify-between">
             <div className="flex gap-6">
               <div><p className="text-[10px] font-mono text-[#555] uppercase tracking-widest">Extraídas</p><p className="text-2xl font-bold text-white">{questions.length}</p></div>
               <div><p className="text-[10px] font-mono text-[#555] uppercase tracking-widest">Selecionadas</p><p className="text-2xl font-bold text-accent">{questions.filter(q => q.selected).length}</p></div>
@@ -520,13 +523,13 @@ function QuestionReviewCard({ question: q, index, cropMode, sessionId, onUpdate,
   }
   return (
     <div className={cn('rounded-2xl border transition-all duration-200',
-      q.selected ? 'bg-[#111111] border-accent/20' : 'bg-[#0d0d0d] border-[#222] opacity-60')}>
+      q.selected ? 'bg-card border-accent/20' : 'bg-background border-border opacity-60')}>
       <div className="flex items-center gap-4 p-4">
         <input type="checkbox" checked={q.selected} onChange={e => onUpdate({ selected: e.target.checked })}
           className="w-4 h-4 accent-[#FF6B35] cursor-pointer" />
         <span className="text-accent font-mono font-bold text-sm w-8 shrink-0">#{q.questionNumber || index + 1}</span>
         <span className="text-[#999] text-xs font-mono truncate flex-1">{q.subject}  {q.subtopic}</span>
-        <span className={cn('text-[10px] font-mono uppercase border rounded px-2 py-0.5', DC[q.difficulty] ?? 'text-[#666] border-[#333]')}>{q.difficulty}</span>
+        <span className={cn('text-[10px] font-mono uppercase border rounded px-2 py-0.5 opacity-0 pointer-events-none select-none', DC[q.difficulty] ?? 'text-[#666] border-[#333]')}>{q.difficulty}</span>
         {q.visualElement.type !== 'text_only' && (
           <span className="text-[10px] font-mono uppercase border rounded px-2 py-0.5 text-blue-400 border-blue-500/30 bg-blue-500/10">
             IMAGEM
@@ -549,28 +552,33 @@ function QuestionReviewCard({ question: q, index, cropMode, sessionId, onUpdate,
           <div className="space-y-1">
             <label className="text-[10px] font-mono text-[#555] uppercase tracking-widest">Enunciado</label>
             <textarea value={q.enunciado} onChange={e => onUpdate({ enunciado: e.target.value })} rows={4}
-              className="w-full bg-black border border-[#333] rounded-md px-3 py-2 text-sm text-white resize-y focus:outline-none focus:border-accent" />
+              className="w-full bg-black border border-[#333] rounded-md px-3 py-2 text-sm text-white resize-y focus:outline-none focus:border-accent question-font" />
           </div>
           {/* ── Preview Visual ── */}
-          {q.visualElement?.type === 'crop' && (
+          {(q.visualElement?.type === 'crop' || q.visualElement?.type === 'svg') && (
             <div className="mt-3 mb-4">
               {cropMode === 'manual' ? (
-                q.visualElement.imageUrl && q.visualElement.imageUrl !== 'skipped' ? (
-                  <div className="flex flex-col gap-2">
-                    <img
-                      src={q.visualElement.imageUrl}
-                      alt={q.visualElement.description}
-                      className="w-full object-contain max-h-[300px] rounded-lg bg-white"
-                    />
-                    <button
-                      onClick={() => onUpdate({ visualElement: { ...q.visualElement, imageUrl: null } })}
-                      className="self-start text-[10px] font-mono text-muted-foreground hover:text-accent transition-colors underline underline-offset-2"
-                    >
-                      Re-selecionar região
-                    </button>
-                  </div>
+                /* ── Manual: crop feito → painel de reconstrução SVG ── */
+                q.visualElement.cropImagePath ? (
+                  <SVGReconstructPanel
+                    questionId={q.id}
+                    cropImagePath={q.visualElement.cropImagePath}
+                    description={q.visualElement.description ?? ''}
+                    pageNumber={q.visualElement.pageNumber ?? 1}
+                    currentSvg={q.visualElement.svgContent ?? null}
+                    onApproved={(svgContent) => {
+                      onUpdate({
+                        visualElement: {
+                          ...q.visualElement,
+                          type: 'svg',
+                          svgContent,
+                          reconstructed: true,
+                        },
+                      })
+                    }}
+                  />
                 ) : q.visualElement.imageUrl === 'skipped' ? (
-                  <div className="p-3 bg-[#0a0a0a] rounded-lg border border-white/10 flex items-center justify-between gap-3">
+                  <div className="p-3 bg-background rounded-lg border border-white/10 flex items-center justify-between gap-3">
                     <p className="text-xs text-[#555] font-mono italic">Figura pulada</p>
                     <button
                       onClick={() => onUpdate({ visualElement: { ...q.visualElement, imageUrl: null } })}
@@ -597,9 +605,15 @@ function QuestionReviewCard({ question: q, index, cropMode, sessionId, onUpdate,
                             questionNumber: q.questionNumber,
                           }),
                         })
-                        const { imageUrl } = await res.json()
-                        if (imageUrl) {
-                          onUpdate({ visualElement: { ...q.visualElement, imageUrl } })
+                        const data = await res.json() as { cropPath?: string; error?: string }
+                        if (data.cropPath) {
+                          onUpdate({
+                            visualElement: {
+                              ...q.visualElement,
+                              cropImagePath: data.cropPath,
+                              reconstructed: false,
+                            },
+                          })
                         }
                       } catch (err) {
                         console.error('[CropManual] Erro:', err)
@@ -609,15 +623,16 @@ function QuestionReviewCard({ question: q, index, cropMode, sessionId, onUpdate,
                   />
                 )
               ) : (
+                /* ── AI mode: exibir imageUrl gerada pelo process-exam ── */
                 <div className="rounded-lg overflow-hidden border border-accent/20">
                   {q.visualElement.imageUrl && q.visualElement.imageUrl !== 'skipped' ? (
                     <img
                       src={q.visualElement.imageUrl}
                       alt={q.visualElement.description}
-                      className="w-full object-contain max-h-[400px] bg-[#0a0a0a]"
+                      className="w-full object-contain max-h-[400px] bg-background"
                     />
                   ) : (
-                    <div className="p-4 bg-[#0a0a0a] flex items-center gap-3">
+                    <div className="p-4 bg-background flex items-center gap-3">
                       <ImageIcon size={16} className="text-yellow-500 shrink-0" />
                       <p className="text-xs text-muted-foreground">
                         {q.visualElement.description ?? 'Imagem não disponível'}
@@ -634,7 +649,7 @@ function QuestionReviewCard({ question: q, index, cropMode, sessionId, onUpdate,
               <div key={alt.letra} className="flex items-start gap-2">
                 <span className="text-accent font-mono text-sm uppercase w-5 shrink-0 mt-2">{alt.letra})</span>
                 <input type="text" value={alt.texto} onChange={e => onUpdateAlt(idx, e.target.value)}
-                  className="flex-1 bg-black border border-[#333] rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-accent" />
+                  className="flex-1 bg-black border border-[#333] rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-accent question-font" />
                 {q.gabarito === alt.letra && <CheckCircle size={16} className="text-green-400 mt-2.5 shrink-0" />}
               </div>
             ))}

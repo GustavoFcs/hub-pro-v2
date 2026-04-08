@@ -183,7 +183,7 @@ export default function MinhaListaPage() {
   // ── SimuladoCard component ───────────────────────────────────
   function SimuladoCard({ s }: { s: SimuladoItem }) {
     return (
-      <div className="group p-4 rounded-lg border border-white/10 bg-[#111] hover:bg-white/5 transition-colors">
+      <div className="group p-4 rounded-lg border border-white/10 bg-card hover:bg-secondary transition-colors">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="min-w-0">
             <p className="text-sm font-medium text-white truncate">{s.titulo}</p>
@@ -197,7 +197,7 @@ export default function MinhaListaPage() {
                 <MoreHorizontal size={15} />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-[#111] border-white/10 text-sm">
+            <DropdownMenuContent align="end" className="bg-card border-border text-sm">
               <DropdownMenuItem
                 onClick={() => router.push(`/simulados/${s.id}`)}
                 className="gap-2 cursor-pointer hover:bg-white/5"
@@ -234,7 +234,7 @@ export default function MinhaListaPage() {
 
   // ── Render ───────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0a0a0a] animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mx-auto w-full max-w-[1100px] px-6 py-8 md:px-10">
 
         {/* Voltar */}
@@ -281,7 +281,7 @@ export default function MinhaListaPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar simulado..."
-            className="w-full max-w-sm bg-[#111] border border-white/10 rounded-lg px-4 py-2
+            className="w-full max-w-sm bg-card border border-white/10 rounded-lg px-4 py-2
                        text-sm text-white placeholder:text-muted-foreground
                        focus:outline-none focus:border-accent/50 transition-colors font-mono"
           />
@@ -341,8 +341,8 @@ export default function MinhaListaPage() {
                 <div key={folder.id}>
                   {/* Folder header */}
                   <div
-                    className="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-[#111]
-                               hover:bg-white/5 cursor-pointer transition-colors group mb-2"
+                    className="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-card
+                               hover:bg-secondary cursor-pointer transition-colors group mb-2"
                     onClick={() => setOpenFolderId(isOpen ? null : folder.id)}
                   >
                     {isOpen

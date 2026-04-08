@@ -96,6 +96,14 @@ export default function BancoQuestoesPage() {
   }, [])
 
   function mapQuestao(q: QuestaoCompleta) {
+    // Build visualElement from DB columns
+    let visualElement: { type: string; imageUrl?: string | null; svgContent?: string | null; description?: string } | null = null
+    if (q.imagem_tipo === 'reconstruida' && q.imagem_svg) {
+      visualElement = { type: 'svg', svgContent: q.imagem_svg }
+    } else if (q.imagem_tipo === 'crop') {
+      visualElement = { type: 'crop', imageUrl: q.imagem_url ?? null }
+    }
+
     return {
       id: q.id,
       topic: q.materia?.nome ?? '—',
@@ -111,9 +119,11 @@ export default function BancoQuestoesPage() {
       imagemUrl: q.imagem_url,
       imagemSvg: q.imagem_svg,
       imagemTipo: q.imagem_tipo,
+      visualElement,
       videoUrl: q.videos?.[0]?.youtube_url ?? null,
       videoTitulo: q.videos?.[0]?.titulo ?? null,
       videoProfessor: q.videos?.[0]?.professor ?? null,
+      gabarito: q.gabarito ?? null,
       anulada: q.anulada,
     }
   }
@@ -372,8 +382,8 @@ export default function BancoQuestoesPage() {
 
   /* ── render ─────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#0a0a0a] animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mx-auto w-full max-w-[1400px] px-6 py-8 md:px-10">
+    <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mx-auto w-full max-w-[1400px] px-6 py-8 md:px-10" style={{ zoom: 0.82 }}>
         {/* ── Top bar ─────────────────────────────────────── */}
         <div className="mb-6 flex items-center justify-between">
           <Link
@@ -403,7 +413,7 @@ export default function BancoQuestoesPage() {
         </div>
 
         {/* ── Dev panel (always visible) ──────────────────── */}
-        <div className="mb-6 rounded-[12px] border border-border/40 bg-[#111111] p-5">
+        <div className="mb-6 rounded-[12px] border border-border/40 bg-card p-5">
           <div className="mb-3 flex items-center gap-2">
             <Settings2 size={12} className="text-accent" />
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -441,7 +451,7 @@ export default function BancoQuestoesPage() {
         {/* ── Main grid ───────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
           {/* Left: filters */}
-          <div className="rounded-[12px] border border-border/40 bg-[#111111] overflow-hidden">
+          <div className="rounded-[12px] border border-border/40 bg-card overflow-hidden">
             {/* Tabs */}
             <div className="flex items-center border-b border-border/40 overflow-x-auto">
               {FILTER_TABS.map((tab) => {
@@ -454,7 +464,7 @@ export default function BancoQuestoesPage() {
                     onClick={() => { setActiveTab(tab.id); setQuery("") }}
                     className={cn(
                       "flex items-center gap-2 whitespace-nowrap px-5 py-3 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors border-b-2 -mb-px",
-                      isActive ? "border-accent text-white" : "border-transparent text-muted-foreground hover:text-white",
+                      isActive ? "border-accent text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
                     )}
                   >
                     <Icon size={13} />
@@ -472,7 +482,7 @@ export default function BancoQuestoesPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Buscar filtros..."
-                  className="h-9 border-border/40 bg-[#0a0a0a] pl-9 text-white placeholder:text-muted-foreground/50 focus-visible:border-accent"
+                  className="h-9 border-border/40 bg-background pl-9 text-foreground placeholder:text-muted-foreground/50 focus-visible:border-accent"
                 />
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -509,7 +519,7 @@ export default function BancoQuestoesPage() {
                             </span>
                             <span className={cn(
                               "text-sm transition-colors",
-                              isRestricted ? "text-[#ff8080] font-medium" : isChecked ? "text-white font-medium" : "text-muted-foreground group-hover:text-white",
+                              isRestricted ? "text-[#ff8080] font-medium" : isChecked ? "text-foreground font-medium" : "text-muted-foreground group-hover:text-foreground",
                             )}>
                               {node.label}
                             </span>
@@ -524,7 +534,7 @@ export default function BancoQuestoesPage() {
 
                         {/* Children tray */}
                         {hasChildren && isOpen && (
-                          <div className="bg-[#0a0a0a] border-y border-border/20">
+                          <div className="bg-background border-y border-border/20">
                             {node.children!.map((child) => {
                               const childChecked = Boolean(selected[child]) || Boolean(restricted[child])
                               const childRestricted = Boolean(restricted[child])
@@ -543,7 +553,7 @@ export default function BancoQuestoesPage() {
                                   </span>
                                   <span className={cn(
                                     "text-xs transition-colors",
-                                    childRestricted ? "text-[#ff8080]" : childChecked ? "text-white" : "text-muted-foreground/70 group-hover/child:text-white",
+                                    childRestricted ? "text-[#ff8080]" : childChecked ? "text-foreground" : "text-muted-foreground/70 group-hover/child:text-foreground",
                                   )}>
                                     {child}
                                   </span>
@@ -563,13 +573,13 @@ export default function BancoQuestoesPage() {
           {/* Right: summary */}
           <div className="flex flex-col gap-6">
             {/* Count */}
-            <div className="rounded-[12px] border border-border/40 bg-[#111111] p-5">
+            <div className="rounded-[12px] border border-border/40 bg-card p-5">
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Questões encontradas</span>
               <p className="mt-1 font-[var(--font-bebas)] text-5xl tracking-tight text-foreground">{showQuestions ? questions.length : 0}</p>
             </div>
 
             {/* Tags */}
-            <div className="flex-1 rounded-[12px] border border-border/40 bg-[#111111] p-5">
+            <div className="flex-1 rounded-[12px] border border-border/40 bg-card p-5">
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Resumo da seleção</span>
 
               {allTags.length === 0 ? (
@@ -587,7 +597,7 @@ export default function BancoQuestoesPage() {
                         )}
                       >
                         {tag}
-                        <button type="button" onClick={() => removeTag(tag)} className="hover:text-white transition-colors">
+                        <button type="button" onClick={() => removeTag(tag)} className="hover:text-foreground transition-colors">
                           <X size={10} />
                         </button>
                       </span>
@@ -614,7 +624,7 @@ export default function BancoQuestoesPage() {
 
         {/* ── Criar lista panel ─────────────────────────── */}
         {criarOpen && (
-          <div className="mt-6 rounded-[12px] border border-accent/40 bg-[#111] p-5 flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="mt-6 rounded-[12px] border border-accent/40 bg-card p-5 flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-2 duration-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ListPlus size={13} className="text-accent" />
@@ -624,7 +634,7 @@ export default function BancoQuestoesPage() {
               </div>
               <button
                 onClick={() => setCriarOpen(false)}
-                className="text-muted-foreground hover:text-white transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X size={14} />
               </button>
@@ -642,7 +652,7 @@ export default function BancoQuestoesPage() {
                   onChange={e => setCriarNome(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleSalvarCriar() }}
                   placeholder="Ex: Matemática IME 2024"
-                  className="bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-2 text-sm text-white
+                  className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground
                              placeholder:text-muted-foreground focus:outline-none focus:border-accent/50
                              transition-colors font-mono"
                 />
@@ -658,7 +668,7 @@ export default function BancoQuestoesPage() {
                   <select
                     value={criarFolderId}
                     onChange={e => setCriarFolderId(e.target.value)}
-                    className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg pl-8 pr-3 py-2
+                    className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-2
                                text-sm text-muted-foreground focus:outline-none focus:border-accent/50
                                transition-colors font-mono appearance-none"
                   >
@@ -708,7 +718,7 @@ export default function BancoQuestoesPage() {
         {isLoading && (
           <div className="mt-8 space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-[200px] animate-pulse rounded-[12px] border border-border/40 bg-[#111111]" />
+              <div key={i} className="h-[200px] animate-pulse rounded-[12px] border border-border/40 bg-card" />
             ))}
           </div>
         )}

@@ -72,6 +72,9 @@ export async function POST(req: NextRequest) {
 
     await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30_000 })
 
+    // Wait for web fonts (including Computer Modern) to finish loading
+    await page.evaluateHandle('document.fonts.ready')
+
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -103,7 +106,12 @@ function buildSimuladoHTML(simulado: {
     difficulty?: string
     year?: number
     institution?: string
-    visualElement?: { type?: string; imageUrl?: string | null; description?: string } | null
+    visualElement?: {
+      type?: string
+      imageUrl?: string | null
+      svgContent?: string | null
+      description?: string
+    } | null
   }>
 }, includeGabarito: boolean): string {
   const questionsHTML = simulado.questions.map((q, idx) => `
@@ -118,9 +126,11 @@ function buildSimuladoHTML(simulado: {
         </div>
       </div>
       <p class="statement">${q.statement ?? ''}</p>
-      ${q.visualElement?.imageUrl && q.visualElement.imageUrl !== 'skipped'
-        ? `<img src="${escapeHtml(q.visualElement.imageUrl)}" class="figure" alt="figura" />`
-        : ''
+      ${q.visualElement?.type === 'svg' && q.visualElement?.svgContent
+        ? `<div class="figure-svg">${q.visualElement.svgContent}</div>`
+        : q.visualElement?.imageUrl && q.visualElement.imageUrl !== 'skipped'
+          ? `<img src="${escapeHtml(q.visualElement.imageUrl)}" class="figure" alt="figura" />`
+          : ''
       }
       <div class="alternatives">
         ${(q.alternatives ?? []).map(alt => `
@@ -153,13 +163,14 @@ function buildSimuladoHTML(simulado: {
     <head>
       <meta charset="UTF-8">
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/dreampulse/computer-modern-web-font@master/fonts.css">
       <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
       <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"
         onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\\\(',right:'\\\\)',display:false},{left:'\\\\[',right:'\\\\]',display:true}],throwOnError:false})">
       </script>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Times New Roman', serif; font-size: 12pt; color: #000; }
+        body { font-family: 'Computer Modern', 'CMU Serif', 'Times New Roman', serif; font-size: 12pt; color: #000; }
 
         .header { text-align: center; margin-bottom: 2em; padding-bottom: 1em; border-bottom: 2px solid #000; }
         .header h1 { font-size: 18pt; font-weight: bold; }
@@ -173,18 +184,20 @@ function buildSimuladoHTML(simulado: {
         .tag.subject { border-color: #666; font-weight: bold; }
         .tag.anulada { border-color: #c00; color: #c00; font-weight: bold; background: #fff0f0; }
 
-        .statement { margin-bottom: 10px; line-height: 1.6; text-align: justify; }
+        .statement { margin-bottom: 10px; line-height: 1.6; text-align: justify; font-family: 'Computer Modern', 'CMU Serif', 'Times New Roman', serif; }
         .figure { max-width: 70%; display: block; margin: 12px auto; page-break-inside: avoid; }
         img { max-width: 100%; height: auto; }
+        .figure-svg { display: flex; justify-content: center; margin: 12px 0; page-break-inside: avoid; }
+        .figure-svg svg { max-width: 70%; height: auto; }
 
         .alternatives { display: flex; flex-direction: column; gap: 4px; }
-        .alternative { display: flex; gap: 8px; }
+        .alternative { display: flex; gap: 8px; font-family: 'Computer Modern', 'CMU Serif', 'Times New Roman', serif; }
         .letra { font-weight: bold; min-width: 20px; }
 
         .gabarito { margin-top: 3em; padding-top: 2em; border-top: 2px solid #000; page-break-before: always; }
         .gabarito h2 { font-size: 14pt; margin-bottom: 1em; }
         .gabarito-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-        .gabarito-item { display: flex; gap: 4px; font-size: 11pt; min-width: 60px; }
+        .gabarito-item { display: flex; gap: 4px; font-size: 11pt; min-width: 60px; font-family: 'Computer Modern', 'CMU Serif', 'Times New Roman', serif; }
         .gabarito-num { font-weight: bold; }
         .gabarito-ans { color: #333; }
         .gabarito-anulada { color: #c00; font-weight: bold; font-size: 8pt; }

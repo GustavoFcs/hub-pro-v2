@@ -25,7 +25,9 @@ export async function extractTextFromPdf(pdfBuffer: Buffer): Promise<PdfPageText
 
     for (const item of textContent.items) {
       if (!('str' in item)) continue
-      const str = item.str.trim()
+      // NFC normalization composes combining characters (e.g. C + cedilla → Ç)
+      // which pdfjs sometimes emits as separate code points for Portuguese PDFs.
+      const str = item.str.normalize('NFC').trim()
       if (!str) continue
 
       // Inserir quebra de linha quando o Y muda significativamente
@@ -37,7 +39,9 @@ export async function extractTextFromPdf(pdfBuffer: Buffer): Promise<PdfPageText
       lastY = y
     }
 
-    pages.push({ pageNumber: pageNum, text: lines.join(' ').replace(/ \n /g, '\n').trim() })
+    const rawText = lines.join(' ').replace(/ \n /g, '\n').trim()
+    // Final NFC pass on the full assembled string
+    pages.push({ pageNumber: pageNum, text: rawText.normalize('NFC') })
   }
 
   console.log(`[PDF Text] Extraídas ${pages.length} páginas | total chars: ${pages.reduce((s, p) => s + p.text.length, 0)}`)

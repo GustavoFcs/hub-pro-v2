@@ -21,6 +21,8 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { createClient } from '@/lib/supabase/client'
+import { ThemeSettings } from '@/components/admin/ThemeSettings'
+import { AIModelSettings } from '@/components/admin/AIModelSettings'
 import type { Prova } from '@/lib/supabase/types'
 
 interface ChartEntry { name: string; questões: number }
@@ -117,7 +119,7 @@ export default function AdminDashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
-          <Card key={i} className="bg-[#111111] border-accent/20 p-6 rounded-2xl shadow-xl hover:border-accent/50 transition-all duration-300">
+          <Card key={i} className="bg-card border-accent/20 p-6 rounded-2xl shadow-xl hover:border-accent/50 transition-all duration-300">
             <CardContent className="p-0 flex flex-col gap-4">
               <div className="flex justify-between items-center">
                 <div className="p-3 bg-accent/10 rounded-xl border border-accent/10">
@@ -136,7 +138,7 @@ export default function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Chart */}
-        <Card className="bg-[#111111] border-accent/20 p-8 rounded-2xl shadow-xl lg:col-span-2">
+        <Card className="bg-card border-accent/20 p-8 rounded-2xl shadow-xl lg:col-span-2">
           <CardHeader className="p-0 mb-8">
             <CardTitle className="text-xl font-bold text-white tracking-tight uppercase">ATIVIDADE DO BANCO</CardTitle>
             <p className="text-[10px] font-mono text-accent uppercase tracking-widest">ÚLTIMOS 4 MESES</p>
@@ -158,7 +160,7 @@ export default function AdminDashboardPage() {
         </Card>
 
         {/* System Logs */}
-        <Card className="bg-[#111111] border-accent/20 p-8 rounded-2xl shadow-xl">
+        <Card className="bg-card border-accent/20 p-8 rounded-2xl shadow-xl">
           <CardHeader className="p-0 mb-8 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-xl font-bold text-white tracking-tight uppercase">ÚLTIMAS PROVAS</CardTitle>
@@ -188,6 +190,28 @@ export default function AdminDashboardPage() {
             ))}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Aparência */}
+      <div className="space-y-4">
+        <div className="border-b border-accent/20 pb-4">
+          <h2 className="text-xl font-bold text-white tracking-tight uppercase">Aparência</h2>
+          <p className="text-[10px] font-mono text-accent uppercase tracking-widest">Tema e modo de cor</p>
+        </div>
+        <div className="max-w-sm">
+          <ThemeSettings />
+        </div>
+      </div>
+
+      {/* Modelos de IA */}
+      <div className="space-y-4">
+        <div className="border-b border-accent/20 pb-4">
+          <h2 className="text-xl font-bold text-white tracking-tight uppercase">Modelos de IA</h2>
+          <p className="text-[10px] font-mono text-accent uppercase tracking-widest">Extração · Visão · Reconstrução SVG</p>
+        </div>
+        <div className="max-w-xl">
+          <AIModelSettings />
+        </div>
       </div>
     </div>
   )

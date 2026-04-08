@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pdfSessionStore } from '@/lib/pdfSessionStore'
 import { renderPageAsPng, cropFigureFromPage } from '@/lib/pdf/cropFigure'
-import { uploadQuestionImage } from '@/lib/storage/uploadQuestionImage'
+import { uploadCropPrivate } from '@/lib/storage/uploadCropPrivate'
 import type { CropBox } from '@/lib/ai/locateFigure'
 
 export async function POST(req: NextRequest) {
@@ -21,16 +21,17 @@ export async function POST(req: NextRequest) {
     const croppedBuffer = await cropFigureFromPage(pageBuffer, cropBox as CropBox, true)
 
     const fileName = `q${questionNumber}-p${pageNumber}-manual-${Date.now()}.png`
-    const imageUrl = await uploadQuestionImage(croppedBuffer, fileName)
+    const cropPath = await uploadCropPrivate(croppedBuffer, fileName)
 
-    if (!imageUrl) {
+    if (!cropPath) {
       return NextResponse.json({ error: 'Falha no upload' }, { status: 500 })
     }
 
-    console.log(`[CropManual] Q${questionNumber}: ✅ ${imageUrl}`)
-    return NextResponse.json({ imageUrl })
-  } catch (err: any) {
-    console.error('[CropManual]', err?.message)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.log(`[CropManual] Q${questionNumber}: ✅ ${cropPath}`)
+    return NextResponse.json({ cropPath, reconstructed: false })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Erro desconhecido'
+    console.error('[CropManual]', message)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

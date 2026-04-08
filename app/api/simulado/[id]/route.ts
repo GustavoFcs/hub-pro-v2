@@ -40,7 +40,8 @@ export async function GET(
       materia:materias(nome),
       subtopico:subtopicos(nome),
       instituicao:instituicoes(sigla, nome),
-      alternativas(id, letra, texto, ordem)
+      alternativas(id, letra, texto, ordem),
+      videos:videos_yt(youtube_url, titulo)
     `)
     .in('id', questaoIds)
 

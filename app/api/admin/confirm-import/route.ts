@@ -22,11 +22,12 @@ interface QuestaoInput {
   difficulty: 'facil' | 'medio' | 'dificil'
   gabarito?: string
   visualElement: {
-    type: 'crop' | 'reconstruct' | 'text_only'
+    type: 'crop' | 'svg' | 'reconstruct' | 'text_only'
     description: string
-    imageUrl?: string | null   // URL já uploadada por process-exam
+    imageUrl?: string | null      // URL pública (AI mode)
+    cropImagePath?: string | null // path privado no storage (manual mode)
+    svgContent?: string | null    // SVG aprovado pelo admin
     boundingBox?: { x: number; y: number; width: number; height: number }
-    svgContent?: string
   }
   // Buscar vídeo YouTube?
   searchVideo?: boolean
@@ -97,17 +98,27 @@ export async function POST(req: NextRequest) {
     let imagem_tipo: 'crop' | 'reconstruida' | null = null
     let imagem_url: string | null = null
     let imagem_svg: string | null = null
+    let crop_image_path: string | null = null
     let tem_imagem = false
 
-    if (q.visualElement.type === 'reconstruct' && q.visualElement.svgContent) {
+    if (
+      (q.visualElement.type === 'svg' || q.visualElement.type === 'reconstruct') &&
+      q.visualElement.svgContent
+    ) {
+      // SVG aprovado pelo admin durante revisão
       imagem_tipo = 'reconstruida'
-      imagem_svg = q.visualElement.svgContent
-      tem_imagem = true
+      imagem_svg  = q.visualElement.svgContent
+      crop_image_path = q.visualElement.cropImagePath ?? null
+      tem_imagem  = true
     } else if (q.visualElement.type === 'crop') {
       imagem_tipo = 'crop'
-      tem_imagem = true
-      if (q.visualElement.imageUrl && q.visualElement.imageUrl !== 'skipped') {
-        // Imagem já recortada e uploadada pelo process-exam → persiste a URL
+      tem_imagem  = true
+      if (q.visualElement.cropImagePath) {
+        // Crop manual salvo no bucket privado → aguarda reconstrução
+        crop_image_path = q.visualElement.cropImagePath
+        imagem_svg = null
+      } else if (q.visualElement.imageUrl && q.visualElement.imageUrl !== 'skipped') {
+        // Imagem já recortada e uploadada pelo process-exam (AI mode) → persiste a URL
         imagem_url = q.visualElement.imageUrl
         imagem_svg = null
       } else {
@@ -132,6 +143,7 @@ export async function POST(req: NextRequest) {
         imagem_tipo,
         imagem_url,
         imagem_svg,
+        crop_image_path,
         anulada: q.gabarito === 'anulada',
         gabarito: (!q.gabarito || q.gabarito === 'anulada')
           ? null

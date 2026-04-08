@@ -18,7 +18,7 @@ interface ProvaRow {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.FC<{ size?: number; className?: string }>; cls: string }> = {
-  pendente:          { label: 'Pendente',         icon: Clock,          cls: 'text-[#999] border-[#333] bg-[#1a1a1a]' },
+  pendente:          { label: 'Pendente',         icon: Clock,          cls: 'text-muted-foreground border-border bg-secondary' },
   processando:       { label: 'Processando',      icon: Loader2,        cls: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' },
   pendente_revisao:  { label: 'Aguard. revisão',  icon: AlertTriangle,  cls: 'text-blue-400 border-blue-500/30 bg-blue-500/10' },
   concluido:         { label: 'Concluído',        icon: Check,          cls: 'text-green-400 border-green-500/30 bg-green-500/10' },
@@ -121,10 +121,10 @@ export default function GerenciarProvasPage() {
             key={key}
             onClick={() => setFilter(key as typeof filter)}
             className={cn(
-              'bg-[#111111] rounded-xl border p-4 text-left transition-all',
+              'bg-card rounded-xl border p-4 text-left transition-all',
               filter === key
                 ? 'border-accent/60 bg-accent/5'
-                : 'border-[#2a2a2a] hover:border-[#444]'
+                : 'border-border hover:border-border/80'
             )}
           >
             <p className="text-[10px] font-mono text-[#555] uppercase tracking-widest">{label}</p>
@@ -134,7 +134,7 @@ export default function GerenciarProvasPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#111111] rounded-2xl border border-[#2a2a2a] overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-0 text-[10px] font-mono text-[#555] uppercase tracking-widest border-b border-[#222] px-6 py-3">
           <span className="w-16">Ano</span>
           <span>Título / Instituição</span>
@@ -152,8 +152,8 @@ export default function GerenciarProvasPage() {
         )}
 
         {!loading && filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-[#555]">
-            <FileText size={32} className="text-[#333]" />
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+            <FileText size={32} className="text-border" />
             <span className="text-sm font-mono">Nenhuma prova encontrada</span>
           </div>
         )}
@@ -167,8 +167,8 @@ export default function GerenciarProvasPage() {
             <div
               key={prova.id}
               className={cn(
-                'grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-0 items-center px-6 py-4 transition-colors hover:bg-[#161616]',
-                idx !== filtered.length - 1 && 'border-b border-[#1a1a1a]'
+                'grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-0 items-center px-6 py-4 transition-colors hover:bg-secondary',
+                idx !== filtered.length - 1 && 'border-b border-border'
               )}
             >
               {/* Ano */}

@@ -30,7 +30,7 @@ export function AdminSidebar() {
   const { logout } = useAuth()
 
   return (
-    <aside className="w-64 h-screen fixed left-0 top-0 bg-[#0a0a0a] border-r border-accent flex flex-col p-6 z-50">
+    <aside className="w-64 h-screen fixed left-0 top-0 bg-sidebar border-r border-accent flex flex-col p-6 z-50">
       <div className="flex items-center gap-3 mb-10 px-2">
         <ShieldCheck className="text-accent" size={24} />
         <h2 className="text-xl font-bold text-white tracking-tight uppercase">ADMIN</h2>
@@ -49,7 +49,7 @@ export function AdminSidebar() {
                 "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300",
                 isActive 
                   ? "bg-accent text-black" 
-                  : "text-[#999999] hover:bg-[#1a1a1a] hover:text-accent"
+                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-accent"
               )}
             >
               <Icon size={18} />
@@ -62,7 +62,7 @@ export function AdminSidebar() {
       <div className="mt-auto flex flex-col gap-2">
         <Link
           href="/banco-questoes"
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-[#999999] hover:bg-[#1a1a1a] hover:text-white transition-all duration-300"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-all duration-300"
         >
           <ArrowLeft size={18} />
           Voltar ao App

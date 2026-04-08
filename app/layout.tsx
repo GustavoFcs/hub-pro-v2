@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { ConfigProvider } from "@/context/ConfigContext"
 import { AuthProvider } from "@/context/AuthContext"
+import { ThemeInitializer } from "@/components/theme/ThemeInitializer"
 import "./globals.css"
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -50,11 +51,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="dark bg-background">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/dreampulse/computer-modern-web-font@master/fonts.css"
+        />
+      </head>
       <body
         className={`${ibmPlexSans.variable} ${bebasNeue.variable} ${ibmPlexMono.variable} font-sans antialiased overflow-x-hidden`}
       >
         <AuthProvider>
-          <ConfigProvider>
+          <ConfigProvider>            <ThemeInitializer />            <ThemeInitializer />
             <div className="noise-overlay" aria-hidden="true" />
             <SmoothScroll>{children}</SmoothScroll>
             <Analytics />
