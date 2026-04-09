@@ -136,21 +136,21 @@
   background: oklch(0.62 0 0);
 }
 
-/* Textura de ruído mais visível no fundo branco */
+/* Textura de ruído — modo claro */
 .light .noise-overlay {
-  opacity: 0;
+  opacity: 0.028;
+  mix-blend-mode: multiply;
+  filter: invert(1);
 }
 
-/* Textura sutil no body para modo claro — cards cobrem com fundo sólido */
+/* Remover textura do body no modo claro (causava efeito forte) */
 .light body {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-blend-mode: multiply;
+  background-image: none;
 }
 
-/* Cards lisos no modo claro — fundo sólido cobre a textura do body */
-.light [class*="bg-card"],
-.light .rounded-lg.border,
-.light .rounded-\[12px\].border {
+/* Cards lisos no modo claro — fundo sólido */
+.light .bg-card,
+.light [class*="bg-card"] {
   background-color: oklch(0.99 0 0);
 }
 
@@ -240,8 +240,14 @@
   height: 100%;
   pointer-events: none;
   z-index: 1000;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Dark mode: overlay sutil */
+.dark .noise-overlay,
+:not(.light) .noise-overlay {
+  opacity: 0.018;
+  mix-blend-mode: screen;
 }
 
 /* Grid background pattern */
@@ -249,6 +255,20 @@
   background-image: linear-gradient(to right, oklch(0.2 0 0) 1px, transparent 1px),
     linear-gradient(to bottom, oklch(0.2 0 0) 1px, transparent 1px);
   background-size: 60px 60px;
+}
+
+/* ─── FONTE DE ENUNCIADO ─────────────────────────── */
+.enunciado-text,
+.enunciado-text * {
+  font-family: 'Times New Roman', Times, serif !important;
+  font-size: 0.925rem;
+  line-height: 1.75;
+  color: oklch(0.82 0 0);
+}
+
+.light .enunciado-text,
+.light .enunciado-text * {
+  color: oklch(0.22 0 0);
 }
 
 /* Custom selection color */
@@ -267,7 +287,7 @@
 /* ── SVG preview inside QuestionCard ────────────────────────── */
 .question-svg-preview {
   display: block;
-  max-width: 480px; /* ← largura máxima da caixa */
+  width: 100%;
 }
 .question-svg-preview svg {
   display: block;

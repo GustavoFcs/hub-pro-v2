@@ -8,6 +8,7 @@ import { useSimuladoStore } from '@/lib/simulado/store'
 import { Bookmark, BookmarkCheck, PlayCircle, ExternalLink, Check, Eye, EyeOff, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { DIFICULDADE_LABEL, DIFICULDADE_COLOR } from '@/lib/constants/dificuldade'
+import { useAdminConfig } from '@/hooks/useAdminConfig'
 
 function formatTempo(segundos: number | null): string {
   if (!segundos) return ''
@@ -80,9 +81,15 @@ export function QuestionCard({
   const removeQuestion = useSimuladoStore(s => s.removeQuestion)
   const hasQuestion    = useSimuladoStore(s => s.hasQuestion)
   const isAdded        = hasQuestion(question.id)
+  const { cardBorderStyle } = useAdminConfig()
 
   return (
-    <Card className="bg-card border-accent/40 hover:border-accent transition-all duration-300 rounded-[12px] p-4 mb-3 group shadow-lg">
+    <Card className={cn(
+      "bg-card transition-all duration-300 rounded-[12px] p-4 mb-3 group shadow-lg",
+      cardBorderStyle === 'accent'
+        ? "border-accent/40 hover:border-accent"
+        : "border-zinc-700/50 hover:border-zinc-500/70"
+    )}>
       <CardHeader className="p-0 mb-3 flex flex-row items-start justify-between">
         <div className="flex flex-col gap-0.5">
           <h3 className="text-base font-bold text-foreground group-hover:text-accent transition-colors duration-200">
@@ -171,30 +178,35 @@ export function QuestionCard({
           </div>
         )}
 
-        <div className="question-font text-[13px] text-foreground leading-relaxed mb-3 font-medium">
+        <div className="enunciado-text text-[13px] leading-relaxed mb-3">
           <MathText text={question.text} />
         </div>
 
         {/* Elemento visual — crop */}
         {question.visualElement?.type === 'crop' && question.visualElement?.imageUrl && (
-          <div className="mb-3 rounded-lg border border-border overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={question.visualElement.imageUrl}
-              alt={question.visualElement.description ?? 'Imagem da questão'}
-              className="max-w-full h-auto max-h-56 object-contain block"
-            />
+          <div className="my-4 rounded-lg border border-border overflow-hidden bg-white">
+            <div className="flex items-center justify-center p-4 min-h-[120px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={question.visualElement.imageUrl}
+                alt={question.visualElement.description ?? 'Imagem da questão'}
+                className="max-w-full h-auto object-contain rounded"
+                style={{ maxHeight: '340px' }}
+              />
+            </div>
           </div>
         )}
 
         {/* Elemento visual — SVG reconstruído */}
         {question.visualElement?.type === 'svg' && question.visualElement?.svgContent && (
-          <div className="mb-3">
-            <div
-              className="question-svg-preview rounded-lg border border-border bg-white p-2 overflow-hidden"
-              dangerouslySetInnerHTML={{ __html: question.visualElement.svgContent }}
-            />
-            <p className="mt-1 text-[10px] text-muted-foreground font-mono italic">
+          <div className="my-4 rounded-lg border border-border overflow-hidden bg-white">
+            <div className="flex items-center justify-center p-4 min-h-[120px]">
+              <div
+                className="question-svg-preview max-w-full h-auto"
+                dangerouslySetInnerHTML={{ __html: question.visualElement.svgContent }}
+              />
+            </div>
+            <p className="px-4 pb-2 text-[10px] text-muted-foreground font-mono italic">
               Imagem reconstruída a partir de referência
               {question.institution ? ` da ${question.institution}` : ''}
               {question.year ? `, ${question.year}` : ''}
@@ -259,43 +271,46 @@ export function QuestionCard({
         <div className="flex items-center gap-3 flex-wrap">
           {/* YouTube link — esquerda */}
           {question.videoUrl && (
-            <a
-              href={question.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={question.videoProfessor
-                ? `Ver resolução com ${question.videoProfessor}`
-                : 'Ver resolução em vídeo'
-              }
-              className="group relative h-9 px-4 text-xs font-semibold rounded-md
-                         inline-flex items-center gap-2 border border-red-500/40
-                         text-red-400 hover:bg-red-500/10 hover:border-red-500/60
-                         transition-all duration-300 overflow-hidden"
-            >
-              <PlayCircle size={13} className="shrink-0" />
+            <div className="relative group">
+              <a
+                href={question.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={question.videoProfessor
+                  ? `Ver resolução com ${question.videoProfessor}`
+                  : 'Ver resolução em vídeo'
+                }
+                className="h-9 px-3 text-xs font-semibold rounded-md
+                           inline-flex items-center gap-2 border border-red-500/40
+                           text-red-400 hover:bg-red-500/10 hover:border-red-500/60
+                           transition-all duration-300 whitespace-nowrap"
+              >
+                <PlayCircle size={13} className="shrink-0" />
 
-              {/* Texto padrão — some no hover */}
-              <span className="transition-all duration-300
-                               group-hover:opacity-0 group-hover:max-w-0
-                               group-hover:overflow-hidden whitespace-nowrap">
-                VER RESOLUÇÃO
-              </span>
-
-              {/* Nome do canal — aparece no hover com slide */}
-              {question.videoProfessor && (
-                <span className="absolute left-9 max-w-0 overflow-hidden whitespace-nowrap
-                                 opacity-0 transition-all duration-300
-                                 group-hover:max-w-[180px] group-hover:opacity-100
-                                 text-red-300 font-medium">
-                  {question.videoProfessor}
+                {/* Texto padrão — some no hover SE tiver professor */}
+                <span className={cn(
+                  "transition-all duration-300",
+                  question.videoProfessor
+                    ? "group-hover:opacity-0 group-hover:w-0 group-hover:overflow-hidden"
+                    : ""
+                )}>
+                  VER RESOLUÇÃO
                 </span>
-              )}
 
-              <ExternalLink
-                size={10}
-                className="opacity-40 group-hover:opacity-70 transition-opacity shrink-0 ml-auto"
-              />
-            </a>
+                {/* Nome do canal — surge no hover */}
+                {question.videoProfessor && (
+                  <span className="absolute left-8 opacity-0 w-0 overflow-hidden
+                                   whitespace-nowrap transition-all duration-300
+                                   group-hover:opacity-100 group-hover:w-auto
+                                   group-hover:relative group-hover:left-0
+                                   text-red-300 font-medium text-[11px]">
+                    {question.videoProfessor}
+                  </span>
+                )}
+
+                <ExternalLink size={10} className="opacity-40 shrink-0" />
+              </a>
+            </div>
           )}
 
           <div className="flex-1" />

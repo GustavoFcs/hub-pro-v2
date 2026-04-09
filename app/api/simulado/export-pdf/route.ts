@@ -184,7 +184,7 @@ function buildSimuladoHTML(simulado: {
         .tag.subject { border-color: #666; font-weight: bold; }
         .tag.anulada { border-color: #c00; color: #c00; font-weight: bold; background: #fff0f0; }
 
-        .statement { margin-bottom: 10px; line-height: 1.6; text-align: justify; font-family: 'Computer Modern', 'CMU Serif', 'Times New Roman', serif; }
+        .statement { margin-bottom: 10px; line-height: 1.7; text-align: justify; font-family: 'Times New Roman', Times, serif; font-size: 11pt; color: #1a1a1a; }
         .figure { max-width: 70%; display: block; margin: 12px auto; page-break-inside: avoid; }
         img { max-width: 100%; height: auto; }
         .figure-svg { display: flex; justify-content: center; margin: 12px 0; page-break-inside: avoid; }

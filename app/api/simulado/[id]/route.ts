@@ -36,7 +36,7 @@ export async function GET(
   const { data: questoes } = await supabase
     .from('questoes')
     .select(`
-      id, enunciado, dificuldade, ano, gabarito, anulada, imagem_url, imagem_tipo, imagem_svg,
+      id, enunciado, dificuldade, ano, gabarito, anulada, imagem_url, imagem_tipo, imagem_svg, frentes,
       materia:materias(nome),
       subtopico:subtopicos(nome),
       instituicao:instituicoes(sigla, nome),

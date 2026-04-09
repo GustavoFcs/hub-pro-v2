@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { useTheme } from "next-themes"
 
 interface AnimatedNoiseProps {
   opacity?: number
@@ -9,8 +10,12 @@ interface AnimatedNoiseProps {
 
 export function AnimatedNoise({ opacity = 0.05, className }: AnimatedNoiseProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const { resolvedTheme } = useTheme()
 
   useEffect(() => {
+    // No modo claro, o noise-overlay CSS já cuida da textura
+    if (resolvedTheme === 'light') return
+
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -57,7 +62,10 @@ export function AnimatedNoise({ opacity = 0.05, className }: AnimatedNoiseProps)
       window.removeEventListener("resize", resize)
       cancelAnimationFrame(animationId)
     }
-  }, [])
+  }, [resolvedTheme])
+
+  // Hide canvas in light mode
+  if (resolvedTheme === 'light') return null
 
   return (
     <canvas

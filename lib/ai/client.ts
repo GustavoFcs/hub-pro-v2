@@ -40,20 +40,17 @@ export type ExamContext = {
   subject?: string
 }
 
-// Prompt
-
-const SYSTEM_PROMPT = `Você é um sistema especializado em digitalização de provas \
-de vestibulares e concursos brasileiros.
+const SYSTEM_PROMPT = `Você é um sistema especialista e revisor técnico de provas de vestibulares brasileiros.
 Extraia TODAS as questões do conteúdo fornecido. Retorne APENAS JSON válido, sem texto adicional.
 
-REGRAS CRÍTICAS DE ENCODING:
-- Preserve TODOS os caracteres especiais do português: ç, Ç, ã, õ, â, ê, î, ô, û, à, é, í, ó, ú
-- NUNCA substitua ç por c, ~ ou qualquer outro caractere
-- NUNCA substitua ã por a, ~a ou qualquer variante
-- Se o PDF tiver encoding Latin-1 ou ISO-8859-1, converta corretamente para UTF-8
-- Sequências como C + ̧ (C + cedilha combinante) devem ser compostas como Ç (U+00C7)
-- Sequências como a + ̃ (a + til combinante) devem ser compostas como ã (U+00E3)
-- Aplique normalização NFC mentalmente antes de retornar qualquer texto`
+REGRAS DE ORTOGRAFIA E CORREÇÃO DE OCR (CRÍTICO):
+- O texto do PDF lido frequentemente contém erros de OCR, caracteres corrompidos ou acentos separados da letra.
+- ATUE COMO UM REVISOR ORTOGRÁFICO: identifique e corrija ativamente essas anomalias para o português perfeito.
+- Una e corrija letras separadas do acento. Exemplos obrigatórios de correção:
+  * "c," ou "c ̧" ou "cc" -> corrija para "ç" (Ex: "soluc,ao" -> "solução")
+  * "a~" ou "a ̃" -> corrija para "ã" (Ex: "tens a~o" -> "tensão")
+  * "o^" -> corrija para "ô" (Ex: "v o^o" -> "vôo")
+- NUNCA retorne o texto quebrado. O enunciado e as alternativas devem ter leitura natural, fluida e com a acentuação correta do Português Brasileiro (ç, ã, ê, í, ó, ú, etc).`
 
 function buildPrompt(context: ExamContext): string {
   return `Analise TODAS as paginas desta prova de ${context.institution} ${context.year}.
@@ -63,67 +60,65 @@ tipicamente tem entre 30 e 90 questoes - extraia TODAS.
 
 Para cada questao retorne:
 - questionNumber: numero inteiro da questao
-- enunciado: texto completo (formulas em LaTeX: $formula$)
+- enunciado: texto completo corrigido (formulas matematicas em LaTeX: $formula$)
 
 FORMATO OBRIGATORIO DAS ALTERNATIVAS:
 Retorne EXATAMENTE assim, sem variacoes:
 "alternatives": [
-  { "letra": "a", "texto": "texto completo da alternativa" },
-  { "letra": "b", "texto": "texto completo da alternativa" },
-  { "letra": "c", "texto": "texto completo da alternativa" },
-  { "letra": "d", "texto": "texto completo da alternativa" },
-  { "letra": "e", "texto": "texto completo da alternativa" }
+  { "letra": "a", "texto": "texto completo da alternativa corrigido" },
+  { "letra": "b", "texto": "texto completo da alternativa corrigido" },
+  { "letra": "c", "texto": "texto completo da alternativa corrigido" },
+  { "letra": "d", "texto": "texto completo da alternativa corrigido" },
+  { "letra": "e", "texto": "texto completo da alternativa corrigido" }
 ]
 NUNCA use "text", "letter", "value" - SEMPRE "letra" e "texto".
 NUNCA retorne alternativas com texto vazio.
 
-- subject: materia
-- subtopic: subtopico especifico
+- subject: materia principal (Ex: "Física", "Matemática", "Química")
+- subtopic: subtopico macro (Ex: "Mecânica", "Álgebra", "Físico-Química")
 - difficulty: "facil", "medio", "dificil" ou "muito_dificil"
-- frentes: array de strings com topicos especificos (1 a 4 frentes)
+- frentes: array de strings com micro-conceitos (1 a 4 frentes)
 - tempo_estimado_segundos: inteiro (segundos estimados para resolver)
 - visualElement: { type: "crop" | "text_only", pageNumber: number | null, description: string }
 
-REGRAS PARA "frentes" (OBRIGATORIO):
-- Liste os topicos especificos desta questao como array de strings
-- Cada questao pode ter de 1 a 4 frentes
-- Use nomes especificos do conteudo, NAO genericos:
-  BOM: "Dinamica", "Campo Eletrico", "MUV", "Termoquimica"
-  BOM: "Geometria Plana", "Progressao Geometrica", "Oxirreducao"
-  RUIM: "Operacao algebrica", "Calculo", "Problema"
-- Para fisica: use nomes de capitulos (ex: "Cinematica", "Optica Geometrica")
-- Para quimica: use reacoes e ramos (ex: "Cinetica Quimica", "pH e pOH")
-- Para matematica: use topicos precisos (ex: "Funcao Afim", "Logaritmo")
-- Para biologia: use sistemas e processos (ex: "Fotossintese", "Mitose")
-- NAO inclua a materia como frente (ex: nao coloque "Fisica" em frentes)
-- NAO inclua dificuldade, tipo ou formato como frente
+REGRAS PARA "frentes" (TAGS DE MICRO-CONTEÚDO - CRÍTICO):
+- Representam os CONCEITOS ESPECÍFICOS e práticos exigidos na questão (1 a 4 frentes).
+- REGRA DE DOMÍNIO: As frentes DEVEM pertencer estritamente à "subject" (matéria) da questão. NUNCA misture.
+  * Se subject="Física": USE APENAS CONCEITOS FÍSICOS. NUNCA use "Geometria", "Álgebra" ou "Cálculo" como frente de física.
+    -> BOM: "Dinâmica", "Leis de Newton", "Rampa Inclinada", "Torque", "Atrito", "Cinemática".
+  * Se subject="Matemática": Use o tópico exato cobrado.
+    -> BOM: "Trigonometria no Triângulo Retângulo", "Matrizes", "Análise Combinatória".
+  * Se subject="Biologia": Use sistemas e eventos específicos.
+    -> BOM: "Mitose", "Sistema Respiratório", "Ecologia de Populações".
+- Seja ultra-específico e granular. Fuja de rótulos amplos.
+  * RUIM: "Problema", "Operação", "Mecânica" (Mecânica é subtopic, não frente).
+  * BOM: "Conservação de Energia", "Colisão Inelástica", "Equação de Clapeyron".
 
 REGRAS PARA "tempo_estimado_segundos":
-- Estime o tempo medio que um estudante preparado levaria para resolver
+- Estime o tempo medio que um estudante preparado levaria para resolver.
 - Base: questao simples de calculo direto = 90s
 - Ajuste por:
   + Texto longo (>5 linhas): +30s
   + Multiplos dados numericos: +20s
   + Figura/grafico para interpretar: +30s
   + Multiplas etapas de raciocinio: +30s por etapa
-  + Questao de lingua portuguesa (interpretacao): +45s
-- Faixa tipica: 60s (trivial) a 360s (muito complexa)
-- Retornar como inteiro (segundos)
+  + Questao interpretativa complexa: +45s
+- Retornar apenas numero inteiro (ex: 120, 180). Faixa de 60 a 360.
 
 REGRAS PARA O ENUNCIADO:
 - Quando encontrar "Dado:", "Dados:", "Observacao:", "Observacoes:",
   "Nota:", "Atencao:" NO MEIO do enunciado, inserir \\n\\n ANTES dessas
   palavras para separar em paragrafo proprio.
-- Cada bullet de lista deve estar em linha separada com \\n.
-- NUNCA juntar "Dados:" ou "Observacoes:" na mesma linha do paragrafo anterior.
+- Cada item de uma lista ou bullet point deve estar em linha separada com \\n.
+- NUNCA junte "Dados:" na mesma linha do paragrafo anterior.
 
 REGRAS DE ELEMENTOS VISUAIS:
-- Se houver figura/grafico/diagrama/circuito: type="crop", pageNumber=<pagina>, description=<descricao>
-- NUNCA usar type="reconstruct" ou type="text_only" quando ha elemento visual
-- NUNCA retornar svgContent
+- Se houver figura/grafico/diagrama/circuito: type="crop", pageNumber=<pagina onde esta a imagem>, description=<descricao detalhada da imagem>
+- NUNCA usar type="reconstruct" ou type="text_only" quando ha elemento visual.
+- NUNCA retornar svgContent.
 - Se nao ha elemento visual: type="text_only"
 
-Retorne SOMENTE este JSON:
+Retorne SOMENTE este JSON (siga a estrutura rigorosamente):
 {
   "pages": [
     {
@@ -220,7 +215,7 @@ async function analyzeWithOpenAICompatible(
 
   const bodyObj: Record<string, unknown> = {
     model: config.textModel,
-    max_tokens: 32000,
+    max_tokens: 64000,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userContent },
@@ -289,7 +284,7 @@ async function analyzeWithAnthropic(
 
   const response = await client.messages.create({
     model: config.textModel,
-    max_tokens: 16000,
+    max_tokens: 32000,
     messages: [
       {
         role: 'user',
@@ -386,6 +381,67 @@ function fixLatexEscapesInJSON(json: string): string {
   return result
 }
 
+/**
+ * Last-resort recovery for truncated AI responses (finish_reason=length).
+ * Tries to find all complete JSON objects that look like AnalyzedPage or question blocks.
+ * Returns a fake AnalyzedPage[] with whatever complete questions were found, or null if nothing.
+ */
+function recoverPartialQuestions(truncated: string): AnalyzedPage[] | null {
+  // Find all complete question objects by scanning for balanced braces.
+  // A complete question starts with {"questionNumber": and ends with a balanced }
+  const questions: AnalyzedQuestion[] = []
+  let i = 0
+  while (i < truncated.length) {
+    // Look for the start of a question object
+    const qStart = truncated.indexOf('"questionNumber"', i)
+    if (qStart === -1) break
+
+    // Find the opening brace of this question object (walk backwards)
+    let braceOpen = qStart - 1
+    while (braceOpen >= 0 && truncated[braceOpen] !== '{') braceOpen--
+    if (braceOpen < 0) { i = qStart + 1; continue }
+
+    // Walk forward to find the matching closing brace
+    let depth = 0
+    let j = braceOpen
+    let closed = -1
+    while (j < truncated.length) {
+      if (truncated[j] === '{') depth++
+      else if (truncated[j] === '}') {
+        depth--
+        if (depth === 0) { closed = j; break }
+      }
+      j++
+    }
+
+    if (closed === -1) {
+      // Object not closed (truncated) — stop processing
+      break
+    }
+
+    const objStr = truncated.slice(braceOpen, closed + 1)
+    try {
+      const fixedObj = fixLatexEscapesInJSON(objStr)
+      const obj = JSON.parse(fixedObj)
+      if (obj && typeof obj.questionNumber === 'number') {
+        questions.push(obj as AnalyzedQuestion)
+      }
+    } catch {
+      // Skip malformed object
+    }
+
+    i = closed + 1
+  }
+
+  if (questions.length === 0) {
+    console.error('[AI Recover] Nenhuma questão parcial recuperada do JSON truncado')
+    return null
+  }
+
+  console.warn(`[AI Recover] JSON truncado — recuperadas ${questions.length} questões parcialmente`)
+  return [{ pageNumber: 1, hasQuestions: true, questions }]
+}
+
 function extractAndParseJSON(raw: string): AnalyzedPage[] {
   let cleaned = raw
     .replace(/```json\n?/g, '')
@@ -419,9 +475,12 @@ function extractAndParseJSON(raw: string): AnalyzedPage[] {
   try {
     parsed = JSON.parse(cleaned)
   } catch (e) {
-    console.error('[AI Parse Error] JSON invalido:', e)
-    console.error('[AI Parse Error] Cleaned string:', cleaned.slice(0, 1000))
-    return []
+    console.error('[AI Parse Error] JSON invalido (provavelmente truncado pelo limite de tokens):', e)
+    console.error('[AI Parse Error] Cleaned string (ultimos 500 chars):', cleaned.slice(-500))
+    // Tentar recuperar questões parciais de JSON truncado.
+    // Procura todos os objetos de questão completos no texto mesmo sem JSON válido ao redor.
+    parsed = recoverPartialQuestions(cleaned)
+    if (!parsed) return []
   }
 
   if (Array.isArray(parsed)) return parsed as AnalyzedPage[]
@@ -444,7 +503,9 @@ function extractAndParseJSON(raw: string): AnalyzedPage[] {
 function normalizePages(pages: AnalyzedPage[]): AnalyzedPage[] {
   const normalized = pages.map((p, i) => ({
     pageNumber: typeof p?.pageNumber === 'number' ? p.pageNumber : i + 1,
-    hasQuestions: Boolean(p?.hasQuestions),
+    // Use hasQuestions from AI, but also treat any page that actually contains questions as having questions.
+    // This prevents the AI mislabeling a page as hasQuestions=false when it does have questions.
+    hasQuestions: Boolean(p?.hasQuestions) || (Array.isArray(p?.questions) && p.questions.length > 0),
     questions: Array.isArray(p?.questions)
       ? p.questions.map((q: any) => {
           const alternatives = (q.alternatives ?? [])

@@ -16,6 +16,8 @@ import {
   Check,
   X,
   GraduationCap,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -31,6 +33,7 @@ type Question = {
   imagem_tipo: string | null
   imagem_svg: string | null
   anulada: boolean | null
+  frentes: string[] | null
   materia: { nome: string } | null
   subtopico: { nome: string } | null
   instituicao: { sigla: string | null; nome: string } | null
@@ -82,6 +85,7 @@ function QuestionItem({
   simuladoId: string
 }) {
   const [answering, setAnswering] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
 
   const inst    = question.instituicao?.sigla ?? question.instituicao?.nome
   const diffKey = question.dificuldade as Difficulty
@@ -113,27 +117,27 @@ function QuestionItem({
 
   return (
     <div className="p-5 rounded-[12px] border border-border bg-card mb-4">
-      {/* Number + tags */}
+      {/* Number + tags + Ver detalhes (top-right) */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <span className="font-mono text-[11px] text-accent font-bold">
           Q{index + 1}
         </span>
-        {inst && (
+        {showDetails && inst && (
           <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-muted/40 text-muted-foreground border border-border">
             {inst}
           </span>
         )}
-        {question.ano && (
+        {showDetails && question.ano && (
           <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-muted/40 text-muted-foreground border border-border">
             {question.ano}
           </span>
         )}
-        {question.materia && (
+        {showDetails && question.materia && (
           <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-accent/10 text-accent border border-accent/20">
             {question.materia.nome}
           </span>
         )}
-        {diffCfg && (
+        {showDetails && diffCfg && (
           <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono', diffCfg.bg, diffCfg.color)}>
             {diffCfg.label}
           </span>
@@ -149,30 +153,64 @@ function QuestionItem({
             {response.correta ? '✓ Correta' : '✗ Errada'}
           </span>
         )}
+        <button
+          onClick={() => setShowDetails(v => !v)}
+          className={cn(
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border",
+            "text-[11px] font-mono transition-all duration-200",
+            !response?.pulada && !response ? "ml-auto" : "",
+            showDetails
+              ? "border-accent/40 text-accent bg-accent/5"
+              : "border-border text-muted-foreground hover:border-accent/40 hover:text-accent"
+          )}
+        >
+          {showDetails ? <EyeOff size={11} /> : <Eye size={11} />}
+          {showDetails ? 'Ocultar' : 'Ver detalhes'}
+        </button>
       </div>
 
+      {/* Frentes */}
+      {showDetails && question.frentes && question.frentes.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {question.frentes.map(frente => (
+            <span
+              key={frente}
+              className="text-[10px] font-mono px-2 py-0.5 rounded-full
+                         border border-accent/20 bg-accent/5 text-accent/70"
+            >
+              {frente}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Enunciado */}
-      <div className="question-font mb-4 text-sm leading-relaxed text-foreground">
+      <div className="enunciado-text mb-4 text-sm leading-relaxed text-foreground">
         <MathText text={question.enunciado} />
       </div>
 
       {/* Imagem */}
       {question.imagem_tipo === 'crop' && question.imagem_url && question.imagem_url !== 'skipped' && (
-        <div className="my-3 rounded-lg border border-border overflow-hidden">
-          <img
-            src={question.imagem_url}
-            alt="Figura da questão"
-            className="w-full object-contain"
-          />
+        <div className="my-4 rounded-lg border border-border overflow-hidden bg-white">
+          <div className="flex items-center justify-center p-4 min-h-[120px]">
+            <img
+              src={question.imagem_url}
+              alt="Figura da questão"
+              className="max-w-full h-auto object-contain rounded"
+              style={{ maxHeight: '340px' }}
+            />
+          </div>
         </div>
       )}
       {question.imagem_tipo === 'reconstruida' && question.imagem_svg && (
-        <div className="my-3">
-          <div
-            className="rounded-lg border border-border bg-white p-4 flex items-center justify-center overflow-hidden"
-            dangerouslySetInnerHTML={{ __html: question.imagem_svg }}
-          />
-          <p className="mt-1 text-[10px] text-muted-foreground font-mono italic">
+        <div className="my-4 rounded-lg border border-border overflow-hidden bg-white">
+          <div className="flex items-center justify-center p-4 min-h-[120px]">
+            <div
+              className="question-svg-preview max-w-full h-auto"
+              dangerouslySetInnerHTML={{ __html: question.imagem_svg }}
+            />
+          </div>
+          <p className="px-4 pb-2 text-[10px] text-muted-foreground font-mono italic">
             Imagem reconstruída a partir de referência
             {(question.instituicao?.sigla ?? question.instituicao?.nome) ? ` da ${question.instituicao?.sigla ?? question.instituicao?.nome}` : ''}
             {question.ano ? `, ${question.ano}` : ''}
@@ -396,7 +434,7 @@ export default function SimuladoResolvePage() {
 
   return (
     <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mx-auto w-full max-w-[900px] px-6 py-8 md:px-10" style={{ zoom: 0.82 }}>
+      <div className="mx-auto w-full max-w-[1100px] px-6 py-8 md:px-10" style={{ zoom: 0.82 }}>
 
         {/* Voltar */}
         <Link

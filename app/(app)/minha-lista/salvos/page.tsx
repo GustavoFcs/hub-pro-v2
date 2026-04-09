@@ -35,9 +35,9 @@ function mapQuestao(q: QuestaoCompleta) {
     videoProfessor: q.videos?.[0]?.professor ?? null,
     gabarito: q.gabarito ?? null,
     anulada: q.anulada,
-    frentes: (q as Record<string, unknown>).frentes as string[] ?? [],
+    frentes: q.frentes ?? [],
     dificuldade: q.dificuldade,
-    tempo_estimado_segundos: (q as Record<string, unknown>).tempo_estimado_segundos as number | null ?? null,
+    tempo_estimado_segundos: q.tempo_estimado_segundos ?? null,
   }
 }
 
@@ -64,12 +64,13 @@ export default function SalvosPage() {
         videos:videos_yt(*)
       `)
       .in('id', ids)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.error('[Salvos]', error)
         setQuestions(
           ((data as unknown as QuestaoCompleta[]) ?? []).map(mapQuestao)
         )
+        setLoading(false)
       })
-      .finally(() => setLoading(false))
   }, [savedIds, savedLoading])
 
   return (

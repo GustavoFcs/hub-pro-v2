@@ -12,13 +12,16 @@ export interface SimuladoQuestion {
   subject?: string
   institution?: string
   alternatives: { id: string; text: string }[]
-  visualElement?: { type: string; imageUrl?: string | null; description?: string } | null
+  visualElement?: { type: string; imageUrl?: string | null; svgContent?: string | null; description?: string } | null
   videoUrl?: string | null
   videoTitulo?: string | null
   videoProfessor?: string | null
   imagemUrl?: string | null
   imagemSvg?: string | null
   imagemTipo?: 'crop' | 'reconstruida' | null
+  dificuldade?: string
+  frentes?: string[]
+  tempo_estimado_segundos?: number | null
 }
 
 interface SimuladoStore {

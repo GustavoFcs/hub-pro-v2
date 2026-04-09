@@ -98,7 +98,7 @@ export function HubSection() {
   }, [])
 
   return (
-    <section ref={sectionRef} id="hub" className="relative py-32 pl-6 md:pl-28 pr-6 md:pr-12 bg-background">
+    <section ref={sectionRef} id="hub" className="relative py-32 pl-6 md:pl-28 pr-6 md:pr-12 bg-background" style={{ zIndex: 1001, isolation: 'isolate' }}>
       {/* Section header */}
       <div ref={headerRef} className="mb-16 flex items-end justify-between">
         <div>

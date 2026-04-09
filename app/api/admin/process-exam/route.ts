@@ -151,7 +151,9 @@ export async function POST(req: NextRequest) {
   // ── 8. Achatar questões de todas as páginas ───────────────
   const allQuestions: ProcessedQuestion[] = []
   for (const page of pages) {
-    if (page.hasQuestions) {
+    // Aceitar páginas com hasQuestions=true OU que tenham questões no array
+    // (a IA às vezes marca hasQuestions=false mesmo tendo extraído questões)
+    if (page.hasQuestions || page.questions.length > 0) {
       for (const q of page.questions) {
         allQuestions.push({ ...q, pagina: page.pageNumber })
       }

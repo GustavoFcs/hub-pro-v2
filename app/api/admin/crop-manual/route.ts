@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { pdfSessionStore } from '@/lib/pdfSessionStore'
+import { pdfSessionStore, pdfPageCache } from '@/lib/pdfSessionStore'
 import { renderPageAsPng, cropFigureFromPage } from '@/lib/pdf/cropFigure'
 import { uploadCropPrivate } from '@/lib/storage/uploadCropPrivate'
 import type { CropBox } from '@/lib/ai/locateFigure'
@@ -17,7 +17,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const pageBuffer = await renderPageAsPng(pdfBuffer, pageNumber, 2.0)
+    // Use cached page PNG if available — guarantees pixel-identical coordinates
+    // with what render-page returned to the canvas (critical for scanned PDFs)
+    const cacheKey = `${sessionId}:${pageNumber}`
+    const pageBuffer = pdfPageCache.get(cacheKey)
+      ?? await renderPageAsPng(pdfBuffer, pageNumber, 2.0)
+
     const croppedBuffer = await cropFigureFromPage(pageBuffer, cropBox as CropBox, true)
 
     const fileName = `q${questionNumber}-p${pageNumber}-manual-${Date.now()}.png`

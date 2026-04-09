@@ -23,6 +23,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { ThemeSettings } from '@/components/admin/ThemeSettings'
 import { AIModelSettings } from '@/components/admin/AIModelSettings'
+import { useAdminConfig } from '@/hooks/useAdminConfig'
 import type { Prova } from '@/lib/supabase/types'
 
 interface ChartEntry { name: string; questões: number }
@@ -39,6 +40,9 @@ const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Se
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
+  const { cardBorderStyle, setCardBorderStyle, load: loadConfig } = useAdminConfig()
+
+  useEffect(() => { loadConfig() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     async function load() {
@@ -200,6 +204,42 @@ export default function AdminDashboardPage() {
         </div>
         <div className="max-w-sm">
           <ThemeSettings />
+        </div>
+
+        {/* Toggle de borda dos cards */}
+        <div className="max-w-sm mt-4">
+          <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
+            <div className="flex-1">
+              <p className="text-xs font-mono text-foreground font-medium">
+                Borda dos cards
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {cardBorderStyle === 'accent' ? 'Ciano técnico (#00B4D8)' : 'Cinza neutro'}
+              </p>
+            </div>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => setCardBorderStyle('accent')}
+                className={`px-3 py-1.5 rounded text-[11px] font-mono border transition-all ${
+                  cardBorderStyle === 'accent'
+                    ? 'bg-[#00B4D8]/10 border-[#00B4D8] text-[#00B4D8]'
+                    : 'border-border text-muted-foreground hover:border-accent/40'
+                }`}
+              >
+                Ciano
+              </button>
+              <button
+                onClick={() => setCardBorderStyle('neutral')}
+                className={`px-3 py-1.5 rounded text-[11px] font-mono border transition-all ${
+                  cardBorderStyle === 'neutral'
+                    ? 'bg-zinc-500/10 border-zinc-500 text-zinc-400'
+                    : 'border-border text-muted-foreground hover:border-zinc-500/40'
+                }`}
+              >
+                Neutro
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

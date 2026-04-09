@@ -2,6 +2,7 @@
 
 import { InlineMath, BlockMath } from 'react-katex'
 import 'katex/dist/katex.min.css'
+import { cn } from '@/lib/utils'
 
 interface MathTextProps {
   text: string
@@ -33,7 +34,7 @@ export function MathText({ text, className }: MathTextProps) {
   const paragraphs = text.split('\n\n')
 
   return (
-    <span className={className}>
+    <span className={cn("enunciado-text", className)}>
       {paragraphs.map((para, pIdx) => {
         const lines = para.split('\n')
         return (

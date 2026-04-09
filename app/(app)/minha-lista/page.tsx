@@ -56,6 +56,115 @@ type SimuladoItem = {
   simulado_questoes: { count: number }[]
 }
 
+// ── SimuladoCard (outside page component to avoid Radix reconciliation bugs) ──
+interface SimuladoCardProps {
+  s: SimuladoItem
+  folders: Folder[]
+  onMove: (simuladoId: string, folderId: string | null) => Promise<void>
+  onDelete: (id: string) => Promise<void>
+  onExport: (s: SimuladoItem) => void
+}
+
+function SimuladoCard({ s, folders, onMove, onDelete, onExport }: SimuladoCardProps) {
+  const router = useRouter()
+
+  function formatDate(d: string) {
+    return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
+  function questaoCount(sim: SimuladoItem) {
+    return sim.simulado_questoes?.[0]?.count ?? 0
+  }
+
+  return (
+    <div className="group p-4 rounded-lg border border-border bg-card hover:bg-secondary transition-colors">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{s.titulo}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+            {questaoCount(s)} questão{questaoCount(s) !== 1 ? 'ões' : ''} · {formatDate(s.created_at)}
+          </p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="shrink-0 p-1 rounded hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-colors">
+              <MoreHorizontal size={15} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-card border-border text-sm">
+            <DropdownMenuItem
+              onClick={() => router.push(`/simulados/${s.id}`)}
+              className="gap-2 cursor-pointer"
+            >
+              <Eye size={13} /> Ver / Resolver
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onExport(s)}
+              className="gap-2 cursor-pointer"
+            >
+              <Download size={13} /> Exportar PDF
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+
+            {/* Mover para pasta */}
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="gap-2">
+                <FolderInput size={13} /> Mover para pasta
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="bg-card border-border">
+                <DropdownMenuItem
+                  onClick={() => onMove(s.id, null)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <FolderMinus size={13} className="text-muted-foreground" />
+                  Sem pasta
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {folders.map(f => (
+                  <DropdownMenuItem
+                    key={f.id}
+                    onClick={() => onMove(s.id, f.id)}
+                    className={cn('gap-2 cursor-pointer', s.folder_id === f.id && 'text-accent')}
+                  >
+                    <Folder size={13} />
+                    {f.nome}
+                    {s.folder_id === f.id && <Check size={11} className="ml-auto" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+
+            {/* Remover da pasta */}
+            {s.folder_id && (
+              <DropdownMenuItem
+                onClick={() => onMove(s.id, null)}
+                className="gap-2 cursor-pointer text-orange-400 hover:text-orange-300"
+              >
+                <FolderMinus size={13} /> Remover da pasta
+              </DropdownMenuItem>
+            )}
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => onDelete(s.id)}
+              className="gap-2 cursor-pointer text-red-400 hover:bg-red-400/10 focus:text-red-400"
+            >
+              <Trash2 size={13} /> Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <button
+        onClick={() => router.push(`/simulados/${s.id}`)}
+        className="w-full py-1.5 rounded text-xs font-semibold font-mono uppercase tracking-wider
+                   border border-accent/30 text-accent hover:bg-accent/10 transition-colors"
+      >
+        Iniciar / Continuar
+      </button>
+    </div>
+  )
+}
+
 export default function MinhaListaPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -200,98 +309,6 @@ export default function MinhaListaPage() {
     acc[f.id] = filtered.filter(s => s.folder_id === f.id)
     return acc
   }, {})
-
-  // ── SimuladoCard component ───────────────────────────────────
-  function SimuladoCard({ s }: { s: SimuladoItem }) {
-    return (
-      <div className="group p-4 rounded-lg border border-border bg-card hover:bg-secondary transition-colors">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{s.titulo}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
-              {questaoCount(s)} questão{questaoCount(s) !== 1 ? 'ões' : ''} · {formatDate(s.created_at)}
-            </p>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="shrink-0 p-1 rounded hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-colors">
-                <MoreHorizontal size={15} />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-card border-border text-sm">
-              <DropdownMenuItem
-                onClick={() => router.push(`/simulados/${s.id}`)}
-                className="gap-2 cursor-pointer"
-              >
-                <Eye size={13} /> Ver / Resolver
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => exportPDF(s)}
-                className="gap-2 cursor-pointer"
-              >
-                <Download size={13} /> Exportar PDF
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-
-              {/* Mover para pasta */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="gap-2">
-                  <FolderInput size={13} /> Mover para pasta
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="bg-card border-border">
-                  <DropdownMenuItem
-                    onClick={() => moveSimuladoToPasta(s.id, null)}
-                    className="gap-2 cursor-pointer"
-                  >
-                    <FolderMinus size={13} className="text-muted-foreground" />
-                    Sem pasta
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {folders.map(f => (
-                    <DropdownMenuItem
-                      key={f.id}
-                      onClick={() => moveSimuladoToPasta(s.id, f.id)}
-                      className={cn('gap-2 cursor-pointer', s.folder_id === f.id && 'text-accent')}
-                    >
-                      <Folder size={13} />
-                      {f.nome}
-                      {s.folder_id === f.id && <Check size={11} className="ml-auto" />}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-
-              {/* Remover da pasta */}
-              {s.folder_id && (
-                <DropdownMenuItem
-                  onClick={() => moveSimuladoToPasta(s.id, null)}
-                  className="gap-2 cursor-pointer text-orange-400 hover:text-orange-300"
-                >
-                  <FolderMinus size={13} /> Remover da pasta
-                </DropdownMenuItem>
-              )}
-
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => deleteSimulado(s.id)}
-                className="gap-2 cursor-pointer text-red-400 hover:bg-red-400/10 focus:text-red-400"
-              >
-                <Trash2 size={13} /> Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <button
-          onClick={() => router.push(`/simulados/${s.id}`)}
-          className="w-full py-1.5 rounded text-xs font-semibold font-mono uppercase tracking-wider
-                     border border-accent/30 text-accent hover:bg-accent/10 transition-colors"
-        >
-          Iniciar / Continuar
-        </button>
-      </div>
-    )
-  }
 
   // ── Render ───────────────────────────────────────────────────
   return (
@@ -493,7 +510,7 @@ export default function MinhaListaPage() {
                           Pasta vazia
                         </p>
                       ) : (
-                        items.map(s => <SimuladoCard key={s.id} s={s} />)
+                        items.map(s => <SimuladoCard key={s.id} s={s} folders={folders} onMove={moveSimuladoToPasta} onDelete={deleteSimulado} onExport={exportPDF} />)
                       )}
                     </div>
                   )}
@@ -510,7 +527,7 @@ export default function MinhaListaPage() {
                   </p>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {unfiledSimulados.map(s => <SimuladoCard key={s.id} s={s} />)}
+                  {unfiledSimulados.map(s => <SimuladoCard key={s.id} s={s} folders={folders} onMove={moveSimuladoToPasta} onDelete={deleteSimulado} onExport={exportPDF} />)}
                 </div>
               </div>
             )}

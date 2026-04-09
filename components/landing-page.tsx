@@ -38,7 +38,7 @@ export function LandingPage() {
 
   return (
     <section ref={sectionRef} id="hero" className="relative min-h-screen flex items-center pl-6 md:pl-28 pr-6 md:pr-12">
-      <AnimatedNoise opacity={0.03} />
+      <AnimatedNoise opacity={0.015} />
 
       {/* Left vertical labels */}
       <div className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2">

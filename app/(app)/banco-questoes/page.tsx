@@ -126,9 +126,9 @@ export default function BancoQuestoesPage() {
       videoProfessor: q.videos?.[0]?.professor ?? null,
       gabarito: q.gabarito ?? null,
       anulada: q.anulada,
-      frentes: (q as Record<string, unknown>).frentes as string[] ?? [],
+      frentes: q.frentes ?? [],
       dificuldade: q.dificuldade,
-      tempo_estimado_segundos: (q as Record<string, unknown>).tempo_estimado_segundos as number | null ?? null,
+      tempo_estimado_segundos: q.tempo_estimado_segundos ?? null,
     }
   }
 

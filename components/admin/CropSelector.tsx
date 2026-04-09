@@ -44,25 +44,46 @@ export function CropSelector({
   const draw = useCallback(() => {
     const canvas = canvasRef.current
     const img = imgRef.current
-    if (!canvas || !img || canvas.width === 0) return
+    const container = containerRef.current
+    if (!canvas || !img || !container) return
+
+    // Use CSS dimensions for drawing (ctx is already DPR-scaled)
+    const cssW = container.clientWidth || 800
+    const cssH = Math.round(img.naturalHeight * (cssW / img.naturalWidth))
 
     const box = currentBoxRef.current
     const ctx = canvas.getContext('2d')!
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    
+    // Limpa o canvas inteiro
+    ctx.clearRect(0, 0, cssW, cssH)
+    
+    // 1. Desenha a imagem base
+    ctx.drawImage(img, 0, 0, cssW, cssH)
 
     if (!box) return
 
-    const x = (box.xPct / 100) * canvas.width
-    const y = (box.yPct / 100) * canvas.height
-    const w = (box.wPct / 100) * canvas.width
-    const h = (box.hPct / 100) * canvas.height
+    const x = (box.xPct / 100) * cssW
+    const y = (box.yPct / 100) * cssH
+    const w = (box.wPct / 100) * cssW
+    const h = (box.hPct / 100) * cssH
 
+    // 2. Desenha a máscara preta translúcida por cima de tudo
     ctx.fillStyle = 'rgba(0,0,0,0.45)'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.clearRect(x, y, w, h)
-    ctx.drawImage(img, x, y, w, h, x, y, w, h)
+    ctx.fillRect(0, 0, cssW, cssH)
 
+    // 3. Usa o clip para "recortar" o buraco onde a imagem vai aparecer clara
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(x, y, w, h)
+    ctx.clip()
+
+    // 4. Redesenha a imagem original (ela só vai aparecer dentro do quadrado do clip)
+    ctx.drawImage(img, 0, 0, cssW, cssH)
+
+    // 5. Restaura o contexto para podermos desenhar as bordas por cima de tudo livremente
+    ctx.restore()
+
+    // Desenha as bordas e os cantos
     ctx.strokeStyle = '#ff6600'
     ctx.lineWidth = 2
     ctx.strokeRect(x, y, w, h)
@@ -75,6 +96,7 @@ export function CropSelector({
       [x, y + h / 2], [x + w, y + h / 2],
     ].forEach(([hx, hy]) => ctx.fillRect(hx - hs / 2, hy - hs / 2, hs, hs))
 
+    // Label da questão
     ctx.fillStyle = '#ff6600'
     ctx.fillRect(x, y - 22, 120, 22)
     ctx.fillStyle = '#000'
@@ -110,9 +132,25 @@ export function CropSelector({
             const canvas = canvasRef.current
             const container = containerRef.current
             if (!canvas || !container) return
+
+            const dpr  = window.devicePixelRatio || 1
             const maxW = container.clientWidth || 800
-            canvas.width  = maxW
-            canvas.height = Math.round(img.naturalHeight * (maxW / img.naturalWidth))
+            const scale = maxW / img.naturalWidth
+            const cssW = maxW
+            const cssH = Math.round(img.naturalHeight * scale)
+
+            // Native pixels (DPR-aware)
+            canvas.width  = Math.round(cssW * dpr)
+            canvas.height = Math.round(cssH * dpr)
+
+            // CSS element size
+            canvas.style.width  = `${cssW}px`
+            canvas.style.height = `${cssH}px`
+
+            // Scale context once so drawing uses CSS coords
+            const ctx = canvas.getContext('2d')
+            if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
             setCanvasReady(true)
           })
         }
@@ -139,10 +177,32 @@ export function CropSelector({
   // ── Recalculate on container resize ────────────────────────────────
   useEffect(() => {
     const observer = new ResizeObserver(() => {
-      draw()
+      const canvas    = canvasRef.current
+      const container = containerRef.current
+      const img       = imgRef.current
+      if (!canvas || !container || !img) return
+
+      const dpr  = window.devicePixelRatio || 1
+      const maxW = container.clientWidth
+      if (!maxW) return
+
+      const scale = maxW / img.naturalWidth
+      const cssH  = Math.round(img.naturalHeight * scale)
+
+      canvas.width  = Math.round(maxW * dpr)
+      canvas.height = Math.round(cssH * dpr)
+      canvas.style.width  = `${maxW}px`
+      canvas.style.height = `${cssH}px`
+
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+        draw()
+      }
     })
-    if (canvasRef.current?.parentElement) {
-      observer.observe(canvasRef.current.parentElement)
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current)
     }
     return () => observer.disconnect()
   }, [draw])
@@ -152,19 +212,11 @@ export function CropSelector({
     const canvas = e.currentTarget as HTMLCanvasElement
     const rect   = canvas.getBoundingClientRect()
 
-    // Escala real: pixels nativos / tamanho CSS
-    const scaleX = canvas.width  / rect.width
-    const scaleY = canvas.height / rect.height
+    // Use rect (CSS viewport size) — works correctly with zoom: 0.82 too
+    const x = ((e.clientX - rect.left) / rect.width)  * 100
+    const y = ((e.clientY - rect.top)  / rect.height) * 100
 
-    // Coordenadas em pixels nativos
-    const nativeX = (e.clientX - rect.left) * scaleX
-    const nativeY = (e.clientY - rect.top)  * scaleY
-
-    // Converter para porcentagem relativa ao canvas nativo
-    return {
-      x: (nativeX / canvas.width)  * 100,
-      y: (nativeY / canvas.height) * 100,
-    }
+    return { x, y }
   }
 
   const onMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -228,8 +280,11 @@ export function CropSelector({
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
           onMouseLeave={() => {
-            // Apenas parar de arrastar, não confirmar
             isDraggingRef.current = false
+            if (rafRef.current) {
+              cancelAnimationFrame(rafRef.current)
+              rafRef.current = null
+            }
           }}
         />
       </div>

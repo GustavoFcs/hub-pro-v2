@@ -33,12 +33,14 @@ interface ReviewQuestion {
   alternatives: Alternative[]
   subject: string
   subtopic: string
-  difficulty: 'facil' | 'medio' | 'dificil'
+  difficulty: 'facil' | 'medio' | 'dificil' | 'muito_dificil'
   gabarito: string
   visualElement: VisualElement
   selected: boolean
   expanded: boolean
   searchVideo: boolean
+  frentes: string[]
+  tempo_estimado_segundos: number
 }
 type ProcessExamResponse = {
   provaId: string
@@ -135,7 +137,14 @@ export default function UploadProvaPage() {
       const data = await res.json() as ProcessExamResponse
       setProcessProgress(100); setProcessStatus(`Concluído! ${data.questions.length} questões extraídas.`)
       const reviewQs: ReviewQuestion[] = data.questions.map(q => ({
-        ...q, id: randomId(), gabarito: q.gabarito ?? '', selected: true, expanded: false, searchVideo: true,
+        ...q,
+        id: randomId(),
+        gabarito: q.gabarito ?? '',
+        frentes: (q as ReviewQuestion).frentes ?? [],
+        tempo_estimado_segundos: (q as ReviewQuestion).tempo_estimado_segundos ?? 120,
+        selected: true,
+        expanded: false,
+        searchVideo: true,
       }))
       setProvaId(data.provaId); setSessionId(data.sessionId ?? null); setQuestions(reviewQs)
       setTimeout(() => setStage('gabarito'), 600)
@@ -161,6 +170,8 @@ export default function UploadProvaPage() {
             alternatives: q.alternatives, subject: q.subject, subtopic: q.subtopic,
             difficulty: q.difficulty, gabarito: q.gabarito || undefined,
             visualElement: q.visualElement, searchVideo: q.searchVideo,
+            frentes: q.frentes ?? [],
+            tempo_estimado_segundos: q.tempo_estimado_segundos ?? 120,
           })),
         }),
       })
@@ -672,6 +683,31 @@ function QuestionReviewCard({ question: q, index, cropMode, sessionId, onUpdate,
                 className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-accent">
                 <option value="facil">{DIFICULDADE_LABEL.facil}</option><option value="medio">{DIFICULDADE_LABEL.medio}</option><option value="dificil">{DIFICULDADE_LABEL.dificil}</option><option value="muito_dificil">{DIFICULDADE_LABEL.muito_dificil}</option>
               </select>
+            </div>
+            <div className="space-y-1 col-span-2">
+              <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Frentes</label>
+              <div className="flex flex-wrap gap-1.5 mb-1">
+                {(q.frentes ?? []).map((f, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full border border-accent/30 bg-accent/5 text-accent/80">
+                    {f}
+                    <button type="button" onClick={() => onUpdate({ frentes: q.frentes.filter((_, j) => j !== i) })} className="ml-0.5 hover:text-red-400 transition-colors">×</button>
+                  </span>
+                ))}
+              </div>
+              <input
+                placeholder="Adicionar frente (Enter)"
+                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-accent"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    const val = (e.target as HTMLInputElement).value.trim()
+                    if (val && !q.frentes.includes(val)) {
+                      onUpdate({ frentes: [...(q.frentes ?? []), val] });
+                      (e.target as HTMLInputElement).value = ''
+                    }
+                  }
+                }}
+              />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Gabarito</label>

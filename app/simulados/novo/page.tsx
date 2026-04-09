@@ -31,7 +31,11 @@ import {
   GraduationCap,
   Loader2,
   FileText,
+  Eye,
+  EyeOff,
+  Clock,
 } from 'lucide-react'
+import { DIFICULDADE_LABEL, DIFICULDADE_COLOR } from '@/lib/constants/dificuldade'
 import { Button } from '@/components/ui/button'
 
 export default function SimuladoNovoPage() {
@@ -331,6 +335,14 @@ export default function SimuladoNovoPage() {
   )
 }
 
+function formatTempo(segundos: number | null | undefined): string {
+  if (!segundos) return ''
+  if (segundos < 60) return `${segundos}s`
+  const min = Math.floor(segundos / 60)
+  const sec = segundos % 60
+  return sec > 0 ? `${min}min ${sec}s` : `${min}min`
+}
+
 function SortableQuestionRow({
   question,
   index,
@@ -340,6 +352,7 @@ function SortableQuestionRow({
   index: number
   onRemove: () => void
 }) {
+  const [showDetails, setShowDetails] = useState(false)
   const {
     attributes,
     listeners,
@@ -383,7 +396,7 @@ function SortableQuestionRow({
 
       {/* Conteúdo */}
       <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap gap-1.5 mb-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
           {question.year > 0 && (
             <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-white/5 text-muted-foreground border border-border">
               {question.year}
@@ -399,19 +412,51 @@ function SortableQuestionRow({
               {question.subject ?? question.topic}
             </span>
           )}
-          {question.difficulty && (
-            <span className={cn(
-              'px-1.5 py-0.5 rounded text-[9px] font-mono border border-current/20',
-              diffCfg?.bg ?? 'bg-white/5',
-              diffCfg?.color ?? 'text-muted-foreground',
-            )}>
-              {diffCfg?.label ?? question.difficulty}
-            </span>
-          )}
+
+          {/* Ver detalhes toggle */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowDetails(v => !v) }}
+            className={cn(
+              "inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px]",
+              "font-mono transition-all duration-200 ml-auto shrink-0",
+              showDetails
+                ? "border-accent/40 text-accent bg-accent/5"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            )}
+          >
+            {showDetails ? <EyeOff size={10} /> : <Eye size={10} />}
+            {showDetails ? 'Ocultar' : 'Ver detalhes'}
+          </button>
         </div>
-        <p className="text-sm text-[#CCCCCC] leading-relaxed line-clamp-2">
+        <p className="enunciado-text text-[13px] text-foreground/70 leading-relaxed line-clamp-2">
           {question.text}
         </p>
+
+        {/* Detalhes expandidos */}
+        {showDetails && (
+          <div className="mt-2 flex flex-wrap gap-1.5 pt-2 border-t border-border/50">
+            {(question.dificuldade || question.difficulty) && (
+              <span className={cn(
+                'text-[10px] font-mono px-2 py-0.5 rounded border',
+                DIFICULDADE_COLOR[(question.dificuldade ?? question.difficulty ?? '').toLowerCase()] ?? 'text-muted-foreground border-border bg-card',
+              )}>
+                {DIFICULDADE_LABEL[(question.dificuldade ?? question.difficulty ?? '').toLowerCase()] ?? question.dificuldade ?? question.difficulty}
+              </span>
+            )}
+            {question.tempo_estimado_segundos && (
+              <span className="text-[10px] font-mono text-muted-foreground
+                               flex items-center gap-1 border border-border rounded px-2 py-0.5">
+                <Clock size={9} /> {formatTempo(question.tempo_estimado_segundos)}
+              </span>
+            )}
+            {question.frentes?.map((f: string) => (
+              <span key={f} className="text-[10px] font-mono px-2 py-0.5 rounded-full
+                                       border border-accent/20 bg-accent/5 text-accent/70">
+                {f}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Remover */}
