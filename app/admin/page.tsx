@@ -107,12 +107,12 @@ export default function AdminDashboardPage() {
     <div className="space-y-10 animate-in fade-in slide-in-from-left-4 duration-500">
       <div className="flex justify-between items-center border-b border-accent/20 pb-8">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight uppercase">ADMIN DASHBOARD</h1>
-          <p className="text-[#999999] text-sm font-mono tracking-widest">VISÃO GERAL DO SISTEMA DERELICT</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2 tracking-tight uppercase">ADMIN DASHBOARD</h1>
+          <p className="text-muted-foreground text-sm font-mono tracking-widest">VISÃO GERAL DO SISTEMA DERELICT</p>
         </div>
         <div className="flex items-center gap-4 bg-accent/10 border border-accent/20 px-6 py-3 rounded-full">
           <Activity className="text-accent animate-pulse" size={18} />
-          <span className="text-[10px] font-bold text-white uppercase tracking-widest">SISTEMA ONLINE</span>
+          <span className="text-[10px] font-bold text-foreground uppercase tracking-widest">SISTEMA ONLINE</span>
         </div>
       </div>
 
@@ -128,8 +128,8 @@ export default function AdminDashboardPage() {
                 {stat.trend && <span className="text-[10px] font-bold text-green-500 font-mono">{stat.trend}</span>}
               </div>
               <div>
-                <p className="text-[10px] font-bold text-[#999999] uppercase tracking-widest mb-1">{stat.label}</p>
-                <h3 className="text-3xl font-bold text-white tracking-tighter">{stat.value}</h3>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{stat.label}</p>
+                <h3 className="text-3xl font-bold text-foreground tracking-tighter">{stat.value}</h3>
               </div>
             </CardContent>
           </Card>
@@ -140,7 +140,7 @@ export default function AdminDashboardPage() {
         {/* Main Chart */}
         <Card className="bg-card border-accent/20 p-8 rounded-2xl shadow-xl lg:col-span-2">
           <CardHeader className="p-0 mb-8">
-            <CardTitle className="text-xl font-bold text-white tracking-tight uppercase">ATIVIDADE DO BANCO</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground tracking-tight uppercase">ATIVIDADE DO BANCO</CardTitle>
             <p className="text-[10px] font-mono text-accent uppercase tracking-widest">ÚLTIMOS 4 MESES</p>
           </CardHeader>
           <CardContent className="p-0 h-[300px] w-full">
@@ -163,27 +163,27 @@ export default function AdminDashboardPage() {
         <Card className="bg-card border-accent/20 p-8 rounded-2xl shadow-xl">
           <CardHeader className="p-0 mb-8 flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-xl font-bold text-white tracking-tight uppercase">ÚLTIMAS PROVAS</CardTitle>
+              <CardTitle className="text-xl font-bold text-foreground tracking-tight uppercase">ÚLTIMAS PROVAS</CardTitle>
               <p className="text-[10px] font-mono text-accent uppercase tracking-widest">PROCESSAMENTO</p>
             </div>
             <ShieldAlert className="text-accent/50" size={20} />
           </CardHeader>
           <CardContent className="p-0 space-y-6">
             {(data?.recentProvas ?? []).length === 0 && (
-              <p className="text-xs text-[#666666] font-mono">Nenhuma prova encontrada.</p>
+              <p className="text-xs text-muted-foreground font-mono">Nenhuma prova encontrada.</p>
             )}
             {(data?.recentProvas ?? []).map((prova) => (
               <div key={prova.id} className="flex gap-4 items-start border-l border-accent/20 pl-4">
                 <div className="flex-1">
-                  <p className="text-xs text-white font-medium mb-1">{prova.titulo}</p>
+                  <p className="text-xs text-foreground font-medium mb-1">{prova.titulo}</p>
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] font-mono font-bold uppercase ${
                       prova.status === 'concluido' ? 'text-green-500' :
                       prova.status === 'erro' ? 'text-red-400' :
-                      prova.status === 'processando' ? 'text-yellow-400' : 'text-[#666666]'
+                      prova.status === 'processando' ? 'text-yellow-400' : 'text-muted-foreground'
                     }`}>{prova.status}</span>
-                    <Clock size={10} className="text-[#666666]" />
-                    <span className="text-[10px] text-[#666666] font-mono">{formatRelativeTime(prova.created_at)}</span>
+                    <Clock size={10} className="text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground font-mono">{formatRelativeTime(prova.created_at)}</span>
                   </div>
                 </div>
               </div>
@@ -195,7 +195,7 @@ export default function AdminDashboardPage() {
       {/* Aparência */}
       <div className="space-y-4">
         <div className="border-b border-accent/20 pb-4">
-          <h2 className="text-xl font-bold text-white tracking-tight uppercase">Aparência</h2>
+          <h2 className="text-xl font-bold text-foreground tracking-tight uppercase">Aparência</h2>
           <p className="text-[10px] font-mono text-accent uppercase tracking-widest">Tema e modo de cor</p>
         </div>
         <div className="max-w-sm">
@@ -206,7 +206,7 @@ export default function AdminDashboardPage() {
       {/* Modelos de IA */}
       <div className="space-y-4">
         <div className="border-b border-accent/20 pb-4">
-          <h2 className="text-xl font-bold text-white tracking-tight uppercase">Modelos de IA</h2>
+          <h2 className="text-xl font-bold text-foreground tracking-tight uppercase">Modelos de IA</h2>
           <p className="text-[10px] font-mono text-accent uppercase tracking-widest">Extração · Visão · Reconstrução SVG</p>
         </div>
         <div className="max-w-xl">

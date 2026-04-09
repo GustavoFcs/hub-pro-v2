@@ -78,6 +78,7 @@ export default function BancoQuestoesPage() {
   const [isLoading, setIsLoading]         = useState(false)
   const [isFiltersLoading, setIsFiltersLoading] = useState(true)
   const [filterData, setFilterData] = useState<FilterData>({ materias: [], instituicoes: [], anos: [] })
+  const [frentesPorMateria, setFrentesPorMateria] = useState<Record<string, string[]>>({})
   const [questions, setQuestions] = useState<ReturnType<typeof mapQuestao>[]>([])
 
   // Criar lista panel
@@ -125,6 +126,9 @@ export default function BancoQuestoesPage() {
       videoProfessor: q.videos?.[0]?.professor ?? null,
       gabarito: q.gabarito ?? null,
       anulada: q.anulada,
+      frentes: (q as Record<string, unknown>).frentes as string[] ?? [],
+      dificuldade: q.dificuldade,
+      tempo_estimado_segundos: (q as Record<string, unknown>).tempo_estimado_segundos as number | null ?? null,
     }
   }
 
@@ -132,13 +136,18 @@ export default function BancoQuestoesPage() {
   const FILTER_ITEMS: Record<TabId, FilterNode[]> = useMemo(() => ({
     materia: filterData.materias.map(m => ({
       label: m.nome,
-      children: m.subtopicos.map(s => s.nome),
+      children: [
+        ...m.subtopicos.map(s => s.nome),
+        ...(frentesPorMateria[m.id] ?? []),
+      ].filter((v, i, a) => a.indexOf(v) === i), // dedupe
     })),
     instituicao: filterData.instituicoes.map(i => ({ label: i.sigla ?? i.nome })),
     ano: filterData.anos.map(a => ({ label: String(a) })),
     dificuldade: DIFICULDADE_ITEMS,
-    restritos: [],
-  }), [filterData])
+    restritos: Object.keys(restricted)
+      .filter(k => restricted[k])
+      .map(nome => ({ label: nome })),
+  }), [filterData, restricted, frentesPorMateria])
 
   // Fetch filter data on mount
   useEffect(() => {
@@ -146,11 +155,12 @@ export default function BancoQuestoesPage() {
       setIsFiltersLoading(true)
       const supabase = createClient()
 
-      const [materiasRes, subtopicosRes, instsRes, anosRes] = await Promise.all([
+      const [materiasRes, subtopicosRes, instsRes, anosRes, frentesRes] = await Promise.all([
         supabase.from('materias').select('*').order('nome'),
         supabase.from('subtopicos').select('*').order('nome'),
         supabase.from('instituicoes').select('*').order('nome'),
         supabase.from('questoes').select('ano').not('ano', 'is', null),
+        supabase.from('questoes').select('frentes, materia_id'),
       ])
 
       const materias = (materiasRes.data ?? []) as Materia[]
@@ -162,6 +172,19 @@ export default function BancoQuestoesPage() {
         if (r.ano != null) anosSet.add(r.ano)
       })
       const anos = Array.from(anosSet).sort((a, b) => b - a)
+
+      // Agrupar frentes por materia_id
+      const fpm: Record<string, string[]> = {}
+      ;(frentesRes.data ?? []).forEach((r: { frentes: string[] | null; materia_id: string | null }) => {
+        if (!r.materia_id) return
+        if (!fpm[r.materia_id]) fpm[r.materia_id] = []
+        ;(r.frentes ?? []).forEach((f: string) => {
+          if (!fpm[r.materia_id!].includes(f)) fpm[r.materia_id!].push(f)
+        })
+      })
+      // Sort frentes alphabetically
+      for (const key of Object.keys(fpm)) fpm[key].sort()
+      setFrentesPorMateria(fpm)
 
       setFilterData({
         materias: materias.map(m => ({
@@ -198,6 +221,11 @@ export default function BancoQuestoesPage() {
 
   /* helpers */
   function toggleItem(item: string) {
+    if (activeTab === 'restritos') {
+      // In restritos tab, always remove the restriction
+      setRestricted((p) => { const next = { ...p }; delete next[item]; return next })
+      return
+    }
     if (restrict) {
       setRestricted((p) => ({ ...p, [item]: !p[item] }))
     } else {
@@ -242,9 +270,26 @@ export default function BancoQuestoesPage() {
       DIFICULDADE_ITEMS.some(d => d.label === l)
     )
 
-    // Restricted subtopics
+    // Collect frentes from labels
+    const allFrentesSet = new Set(Object.values(frentesPorMateria).flat())
+    const frentesLabels = selectedLabels.filter(l => allFrentesSet.has(l))
+
+    // Restricted items by type
     const restrictedSubtopicosNomes = restrictedLabels.filter(l =>
       filterData.materias.some(m => m.subtopicos.some(s => s.nome === l))
+    )
+    const restrictedFrentesLabels = restrictedLabels.filter(l => allFrentesSet.has(l))
+    const restrictedMateriasNomes = restrictedLabels.filter(l =>
+      filterData.materias.some(m => m.nome === l)
+    )
+    const restrictedInstituicoesLabels = restrictedLabels.filter(l =>
+      filterData.instituicoes.some(i => (i.sigla ?? i.nome) === l)
+    )
+    const restrictedAnosLabels = restrictedLabels.filter(l =>
+      filterData.anos.includes(Number(l))
+    )
+    const restrictedDificuldadesLabels = restrictedLabels.filter(l =>
+      DIFICULDADE_ITEMS.some(d => d.label === l)
     )
 
     const materiaIds = filterData.materias
@@ -258,6 +303,14 @@ export default function BancoQuestoesPage() {
     const restrictedSubtopicosIds = subtopicosAll
       .filter(s => restrictedSubtopicosNomes.includes(s.nome))
       .map(s => s.id)
+    const restrictedMateriaIds = filterData.materias
+      .filter(m => restrictedMateriasNomes.includes(m.nome))
+      .map(m => m.id)
+    const restrictedInstituicaoIds = filterData.instituicoes
+      .filter(i => restrictedInstituicoesLabels.includes(i.sigla ?? i.nome))
+      .map(i => i.id)
+    const restrictedAnos = restrictedAnosLabels.map(Number)
+    const restrictedDificuldades = restrictedDificuldadesLabels.map(l => DIFFICULTY_MAP[l])
 
     const instituicaoIds = filterData.instituicoes
       .filter(i => instituicoesLabels.includes(i.sigla ?? i.nome))
@@ -283,9 +336,19 @@ export default function BancoQuestoesPage() {
     if (instituicaoIds.length > 0)         q = q.in('instituicao_id', instituicaoIds)
     if (anos.length > 0)                   q = q.in('ano', anos)
     if (dificuldades.length > 0)           q = q.in('dificuldade', dificuldades)
+    if (frentesLabels.length > 0)          q = q.overlaps('frentes', frentesLabels)
     if (restrictedSubtopicosIds.length > 0)
       q = q.not('subtopico_id', 'in', `(${restrictedSubtopicosIds.join(',')})`)
-
+    if (restrictedMateriaIds.length > 0)
+      q = q.not('materia_id', 'in', `(${restrictedMateriaIds.join(',')})`)
+    if (restrictedInstituicaoIds.length > 0)
+      q = q.not('instituicao_id', 'in', `(${restrictedInstituicaoIds.join(',')})`)
+    if (restrictedAnos.length > 0)
+      q = q.not('ano', 'in', `(${restrictedAnos.join(',')})`)
+    if (restrictedDificuldades.length > 0)
+      q = q.not('dificuldade', 'in', `(${restrictedDificuldades.join(',')})`)
+    for (const frente of restrictedFrentesLabels)
+      q = q.not('frentes', 'cs', `{${frente}}`)
     const { data } = await q
     return ((data as unknown as QuestaoCompleta[]) ?? []).map(mapQuestao)
   }
@@ -364,19 +427,22 @@ export default function BancoQuestoesPage() {
     const bancas: string[] = []
     const anos: string[] = []
     const dificuldades: string[] = []
+    const frentes: string[] = []
 
     const allSubtopicos = filterData.materias.flatMap(m => m.subtopicos)
+    const allFrentesDevSet = new Set(Object.values(frentesPorMateria).flat())
 
     for (const label of selectedLabels) {
       if (filterData.materias.some(m => m.nome === label)) { materias.push(label); continue }
       if (allSubtopicos.some(s => s.nome === label)) { assuntos.push(label); continue }
+      if (allFrentesDevSet.has(label)) { frentes.push(label); continue }
       if (filterData.instituicoes.some(i => (i.sigla ?? i.nome) === label)) { bancas.push(label); continue }
       if (filterData.anos.includes(Number(label))) { anos.push(label); continue }
       if (DIFICULDADE_ITEMS.some(d => d.label === label)) { dificuldades.push(label); continue }
     }
 
-    return { materias, assuntos, bancas, anos, dificuldades, restritos: restrictedLabels }
-  }, [selectedLabels, restrictedLabels, filterData])
+    return { materias, assuntos, frentes, bancas, anos, dificuldades, restritos: restrictedLabels }
+  }, [selectedLabels, restrictedLabels, filterData, frentesPorMateria])
 
   const allTags = [...selectedLabels, ...restrictedLabels.filter((r) => !selectedLabels.includes(r))]
 
@@ -421,13 +487,14 @@ export default function BancoQuestoesPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-7 gap-4">
             {([
               { label: "Matérias", items: devData.materias, red: false },
               { label: "Bancas", items: devData.bancas, red: false },
               { label: "Anos", items: devData.anos, red: false },
               { label: "Dificuldades", items: devData.dificuldades, red: false },
               { label: "Assuntos", items: devData.assuntos, red: false },
+              { label: "Frentes", items: devData.frentes, red: false },
               { label: "Restritos", items: devData.restritos, red: true },
             ]).map((col) => (
               <div key={col.label}>

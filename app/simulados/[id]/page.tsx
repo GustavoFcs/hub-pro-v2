@@ -239,7 +239,6 @@ export default function SimuladoResolvePage() {
   // Pagination / filter
   const [page,    setPage]    = useState(1)
   const [perPage, setPerPage] = useState(10)
-  const [filter,  setFilter]  = useState<'all' | 'correct' | 'wrong' | 'skipped' | 'unanswered'>('all')
 
   // ── Load ────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -368,18 +367,9 @@ export default function SimuladoResolvePage() {
   const correctPct   = total > 0 ? Math.round((correct.length / total) * 100) : 0
   const wrongPct     = total > 0 ? Math.round((wrong.length / total) * 100) : 0
 
-  // ── Filtered questions ───────────────────────────────────────
-  const filteredQs = allQuestions.filter(q => {
-    const r = responses[q.id]
-    if (filter === 'correct')    return r?.correta === true
-    if (filter === 'wrong')      return r?.correta === false && !r.pulada
-    if (filter === 'skipped')    return r?.pulada === true
-    if (filter === 'unanswered') return !r
-    return true
-  })
-
-  const totalPages = Math.ceil(filteredQs.length / perPage)
-  const pagedQs    = filteredQs.slice((page - 1) * perPage, page * perPage)
+  // ── Paginação ───────────────────────────────────────
+  const totalPages = Math.ceil(allQuestions.length / perPage)
+  const pagedQs    = allQuestions.slice((page - 1) * perPage, page * perPage)
 
   // ── Render ───────────────────────────────────────────────────
   if (loading) {
@@ -406,7 +396,7 @@ export default function SimuladoResolvePage() {
 
   return (
     <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mx-auto w-full max-w-[900px] px-6 py-8 md:px-10">
+      <div className="mx-auto w-full max-w-[900px] px-6 py-8 md:px-10" style={{ zoom: 0.82 }}>
 
         {/* Voltar */}
         <Link
@@ -469,19 +459,6 @@ export default function SimuladoResolvePage() {
           </button>
 
           <select
-            value={filter}
-            onChange={e => { setFilter(e.target.value as typeof filter); setPage(1) }}
-            className="text-[11px] bg-card border border-border rounded px-2 py-1
-                       text-muted-foreground focus:outline-none focus:border-accent/50 font-mono"
-          >
-            <option value="all">Todas ({total})</option>
-            <option value="correct">Corretas ({correct.length})</option>
-            <option value="wrong">Erradas ({wrong.length})</option>
-            <option value="skipped">Puladas ({skipped.length})</option>
-            <option value="unanswered">Não respondidas ({total - answered.length})</option>
-          </select>
-
-          <select
             value={perPage}
             onChange={e => { setPerPage(Number(e.target.value)); setPage(1) }}
             className="text-[11px] bg-card border border-border rounded px-2 py-1
@@ -497,7 +474,7 @@ export default function SimuladoResolvePage() {
         {pagedQs.length === 0 ? (
           <div className="flex flex-col items-center py-16 gap-2">
             <GraduationCap size={36} className="text-muted-foreground/20" />
-            <p className="text-xs text-muted-foreground font-mono">Nenhuma questão neste filtro.</p>
+            <p className="text-xs text-muted-foreground font-mono">Nenhuma questão neste simulado.</p>
           </div>
         ) : (
           pagedQs.map((q, idx) => (

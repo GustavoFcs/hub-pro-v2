@@ -27,11 +27,34 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 2. Chamar IA de visão para reconstruir como SVG
-  const svgContent = await reconstructWithAI(signedUrl, description ?? '')
+  // 2. Cascata de modelos — tentar até obter SVG válido
+  const config = await getActiveAIConfigFromDB()
+
+  const SVG_MODEL_CASCADE = [
+    config.svgModel,
+    'google/gemini-2.5-flash',
+    'openai/gpt-4o',
+  ]
+  const modelsToTry = [...new Set(SVG_MODEL_CASCADE)]
+
+  let svgContent: string | null = null
+
+  for (const model of modelsToTry) {
+    console.log(`[ReconstructSVG] Q${questionId} | tentando: ${model}`)
+    svgContent = await reconstructWithModel(signedUrl, description ?? '', model)
+
+    if (svgContent && isValidSVG(svgContent)) {
+      console.log(`[ReconstructSVG] ✅ sucesso com ${model}`)
+      break
+    }
+
+    console.warn(`[ReconstructSVG] ❌ ${model} falhou, tentando próximo...`)
+    svgContent = null
+  }
+
   if (!svgContent) {
     return NextResponse.json(
-      { error: 'IA não conseguiu reconstruir a figura' },
+      { error: 'Todos os modelos falharam na reconstrução' },
       { status: 422 }
     )
   }
@@ -41,110 +64,123 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ svgContent })
 }
 
-async function reconstructWithAI(
+function isValidSVG(svg: string): boolean {
+  if (!svg.startsWith('<svg'))    return false
+  if (!svg.includes('</svg>'))   return false
+  if (!svg.includes('viewBox'))  return false
+  if (svg.length < 800)          return false
+
+  const hasVisualElements = (
+    svg.includes('<path')    ||
+    svg.includes('<line')    ||
+    svg.includes('<rect')    ||
+    svg.includes('<circle')  ||
+    svg.includes('<polygon') ||
+    svg.includes('<polyline')
+  )
+
+  return hasVisualElements
+}
+
+async function reconstructWithModel(
   imageUrl: string,
-  description: string
+  description: string,
+  model: string
 ): Promise<string | null> {
   const config = await getActiveAIConfigFromDB()
   const headers = getAIHeaders(config)
   const baseURL = getAIBaseURL(config)
 
   const prompt = `
-Você é um especialista em SVG técnico. Receberá a imagem de uma figura de prova brasileira
-(vestibular/concurso militar) e deve reconstruí-la como SVG vetorial fiel, colorido e de alta qualidade.
+Você é um especialista em SVG técnico. Receberá a imagem de uma figura de prova
+brasileira (vestibular/concurso militar) e deve reconstruí-la como SVG vetorial.
 
-Descrição da figura: "${description}"
+Descrição fornecida: "${description}"
 
-═══════════════════════════════════════════════════════
-REGRA DE FIDELIDADE ESTRUTURAL — CRÍTICA
-═══════════════════════════════════════════════════════
-ANTES de desenhar qualquer elemento, analise a imagem com máxima atenção e responda
-internamente (não na saída):
-  1. Quantos painéis/subdiagramas existem? Onde estão posicionados?
-  2. Quais são as proporções relativas de cada elemento?
-  3. Quais detalhes pequenos existem? (bolinhas, pontos, articulações, pinos, rótulos)
-  4. Qual é o ângulo exato de cada linha/haste/vetor?
-  5. Onde exatamente a haste/objeto intersecta a superfície do líquido?
+═══════════════════════════════════════════════════
+PRIORIDADE MÁXIMA — FIDELIDADE ESTRUTURAL
+═══════════════════════════════════════════════════
+Antes de escrever qualquer código, analise a imagem e responda internamente:
+  1. Quantos painéis/subdiagramas existem? (a), (b), (c)?
+  2. Qual é o tamanho e proporção de cada elemento?
+  3. Quais detalhes pequenos existem? (bolinhas, pontos, pinos, hachuras, setas)
+  4. Qual é o ângulo EXATO de cada linha, haste ou vetor?
+  5. Onde exatamente elementos se tocam, cruzam ou se conectam?
+  6. Qual é a altura da superfície do líquido (se houver)?
 
-REGRAS DE FIDELIDADE:
-- Se a figura tiver múltiplos painéis (a), (b), (c)... → desenhe TODOS no mesmo SVG,
-  lado a lado, com proporções fiéis à imagem original
-- NUNCA omita elementos pequenos: bolinhas, pontos de articulação, pinos, rótulos
-- Ângulos devem ser visualmente fiéis — meça mentalmente antes de desenhar
-- A linha de superfície do líquido deve estar na altura correta dentro do recipiente
+REGRAS ESTRUTURAIS INVIOLÁVEIS:
+- Múltiplos painéis (a)(b)(c) → TODOS no mesmo SVG, lado a lado, proporcionais
+- Ângulos devem ser visualmente idênticos à imagem — meça antes de desenhar
+- Conexões entre elementos devem ser exatas — sem lacunas nem sobreposições erradas
 - Objetos parcialmente submersos devem cruzar a superfície no ponto correto
-- Rótulos (a), (b), (c) devem aparecer centralizados abaixo de cada painel
-- O ponto de apoio/articulação (onde a haste toca a borda) deve ser representado
-  como um pequeno círculo filled ou triângulo de apoio
+- Bolinhas, pontos de articulação e pequenos detalhes são OBRIGATÓRIOS
+- Rótulos (a), (b), (c) centralizados abaixo de cada painel
+- NÃO invente elementos que não existem na imagem
+- NÃO omita elementos que existem na imagem
 
-CHECKLIST antes de retornar o SVG:
-  ☐ Todos os painéis presentes e posicionados corretamente?
-  ☐ Todos os detalhes pequenos incluídos (bolinhas, pinos, pontos)?
-  ☐ Ângulos das hastes/vetores fiéis à imagem?
-  ☐ Superfície do líquido na altura correta?
-  ☐ Rótulos (a), (b)... presentes e posicionados abaixo?
-  ☐ Proporções gerais fiéis?
-  
+═══════════════════════════════════════════════════
+CORES — APLICAR APÓS FIDELIDADE ESTRUTURAL
+═══════════════════════════════════════════════════
+Após garantir fidelidade estrutural, aplique cores suaves:
 
-IGNORE as cores da imagem original — ela é sempre monocromática e isso NÃO deve ser replicado.
-Sua reconstrução é uma obra nova e SEMPRE colorida. Preto-e-branco é ESTRITAMENTE PROIBIDO
-exceto para texto (#111111) e bordas finas de contorno.
+  Líquido/fluido/água  → fill="rgba(67,97,238,0.18)"  stroke="#4361EE"
+  Objeto sólido/haste  → fill="rgba(230,57,70,0.85)"  stroke="#C1121F"
+  Ponto/bolinha/nó     → fill="#E63946"
+  Região de ar/vazio   → fill="rgba(255,255,255,0.0)" (transparente)
+  Recipiente/caixa     → stroke="#111111" fill="none" stroke-width="2"
+  Interface líquido    → stroke="#4361EE" stroke-width="1.5" stroke-dasharray="6,3"
+  Eixo x               → stroke="#4361EE" stroke-width="2"
+  Eixo y               → stroke="#4361EE" stroke-width="2"
+  Vetor de força       → stroke="#E63946" stroke-width="2.5"
+  Área sombreada       → fill="rgba(0,200,150,0.18)" stroke="#00C896"
+  Região marcada       → fill="rgba(232,184,75,0.20)" stroke="#E8B84B"
 
-Para esta figura especificamente:
-- Região de líquido/fluido      → fill="rgba(67,97,238,0.22)" stroke="#4361EE"  (azul)
-- Região de ar/vazio acima      → fill="rgba(232,184,75,0.10)" stroke="none"    (amarelo muito suave)
-- Objeto sólido/bastão/haste    → fill="rgba(230,57,70,0.80)"  stroke="#E63946" (vermelho sólido)
-- Ponto/nó/articulação          → fill="#E63946"                                (vermelho sólido)
-- Contorno do recipiente/caixa  → stroke="#111111" fill="none"
-- Linha de interface ar/líquido → stroke="#4361EE" stroke-width="2" stroke-dasharray="6,3"
+SE a imagem for monocromática: aplique as cores acima semanticamente.
+SE a imagem já tiver cores: replique-as fielmente, ajustando apenas a opacidade.
 
-PALETA GERAL — para outros elementos não listados acima:
-  Azul    → fill="rgba(67,97,238,0.22)"   stroke="#4361EE"
-  Vermelho → fill="rgba(230,57,70,0.80)"  stroke="#E63946"
-  Verde   → fill="rgba(0,200,150,0.18)"   stroke="#00C896"
-  Amarelo → fill="rgba(232,184,75,0.22)"  stroke="#E8B84B"
-  Roxo    → fill="rgba(114,9,183,0.18)"   stroke="#7209B7"
-  Laranja → fill="rgba(251,86,7,0.20)"    stroke="#FB5607"
+═══════════════════════════════════════════════════
+REGRAS TÉCNICAS
+═══════════════════════════════════════════════════
+- viewBox: proporcional à imagem original (analise as dimensões antes de definir)
+- Texto: font-family="Georgia, serif" font-size="13" fill="#111111"
+- Rótulos de elementos coloridos: mesma cor do elemento, font-size="12"
+- Setas: <defs> com <marker> para cada cor — arrowhead preenchido
+- stroke-width: 2px elementos principais, 1.5px bordas, 1px auxiliares
+- Linhas auxiliares: stroke="#AAAAAA" stroke-dasharray="4,4" opacity="0.6"
+- Fundo: <rect width="W" height="H" fill="white"/>
+- NÃO use <image>, <foreignObject>, @font-face ou JavaScript
 
+═══════════════════════════════════════════════════
+CHECKLIST OBRIGATÓRIO — verificar antes de retornar
+═══════════════════════════════════════════════════
+☐ Todos os painéis (a)(b)(c) presentes e lado a lado?
+☐ Todos os detalhes pequenos incluídos (bolinhas, pinos, pontos)?
+☐ Ângulos das hastes/vetores fiéis à imagem?
+☐ Conexões entre elementos sem lacunas?
+☐ Superfície do líquido na altura correta?
+☐ Rótulos (a)(b)(c) presentes e posicionados abaixo?
+☐ Cores aplicadas em todos os elementos?
+☐ SVG começa com <svg e termina com </svg>?
 
-
-
-═══════════════════════════════════════════════════════
-ANATOMIA DO SVG — ESTRUTURA MÍNIMA OBRIGATÓRIA
-═══════════════════════════════════════════════════════
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 W H">
-  <defs>
-    <!-- markers para setas de cada cor -->
-  </defs>
-  <!-- fundo branco leve -->
-  <rect width="W" height="H" fill="white"/>
-  <!-- elementos da figura -->
-</svg>
-
-═══════════════════════════════════════════════════════
+═══════════════════════════════════════════════════
 FORMATO DE RESPOSTA
-═══════════════════════════════════════════════════════
-Retorne APENAS o código SVG completo, começando exatamente com <svg e terminando com </svg>.
-Absolut­amente sem markdown, sem blocos de código, sem texto antes ou depois.
-  `.trim()
-
-const systemPrompt = `
-Você é um especialista em SVG técnico que reconstrói figuras científicas com máxima
-fidelidade estrutural e visual. Suas respostas são EXCLUSIVAMENTE código SVG válido.
-
-PRIORIDADE MÁXIMA: fidelidade à estrutura original.
-- Preserve TODOS os elementos, por menores que sejam
-- Preserve proporções, ângulos e posições relativas
-- Preserve múltiplos painéis no mesmo SVG
-- Aplique cores da paleta sem alterar a estrutura
+═══════════════════════════════════════════════════
+Retorne APENAS o código SVG completo.
+Comece exatamente com <svg e termine com </svg>.
+Sem markdown, sem blocos de código, sem texto antes ou depois.
 `.trim()
+
+  const systemPrompt = `Você reconstrói figuras científicas de provas brasileiras como SVG vetorial.
+Sua prioridade é FIDELIDADE ESTRUTURAL — ângulos, proporções, conexões e detalhes exatos.
+Cores são secundárias à estrutura. Sua resposta é EXCLUSIVAMENTE código SVG válido.
+Você NUNCA omite elementos visíveis na imagem. Você NUNCA inventa elementos inexistentes.`.trim()
 
   try {
     const res = await fetch(`${baseURL}/chat/completions`, {
       method:  'POST',
       headers,
       body: JSON.stringify({
-        model:       config.svgModel,
+        model,
         max_tokens:  8192,
         temperature: 0,
         messages: [
@@ -168,7 +204,7 @@ PRIORIDADE MÁXIMA: fidelidade à estrutura original.
 
     if (!res.ok) {
       const err = await res.text()
-      console.error('[ReconstructSVG] API erro:', err)
+      console.error(`[ReconstructSVG] API erro (${model}):`, err)
       return null
     }
 
@@ -183,7 +219,7 @@ PRIORIDADE MÁXIMA: fidelidade à estrutura original.
       .trim()
 
     if (!cleaned.startsWith('<svg') || !cleaned.includes('</svg>')) {
-      console.error('[ReconstructSVG] Resposta não é SVG válido:', cleaned.slice(0, 200))
+      console.error(`[ReconstructSVG] Resposta não é SVG válido (${model}):`, cleaned.slice(0, 200))
       return null
     }
 
@@ -191,7 +227,7 @@ PRIORIDADE MÁXIMA: fidelidade à estrutura original.
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido'
-    console.error('[ReconstructSVG] Erro:', message)
+    console.error(`[ReconstructSVG] Erro (${model}):`, message)
     return null
   }
 }

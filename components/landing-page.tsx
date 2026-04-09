@@ -79,11 +79,12 @@ export function LandingPage() {
             <BitmapChevron className="transition-transform duration-[400ms] ease-in-out group-hover:rotate-45" />
           </Link>
           
-          <button
+          <Link
+            href="/register"
             className="group inline-flex items-center gap-3 bg-accent/10 border border-accent/20 px-8 py-4 font-mono text-xs uppercase tracking-widest text-accent hover:bg-accent/20 transition-all duration-300 rounded-sm"
           >
             <ScrambleTextOnHover text="Criar Conta" as="span" duration={0.6} />
-          </button>
+          </Link>
 
           <button
             onClick={setAsGuest}

@@ -18,11 +18,11 @@ export function ThemeSettings() {
         <button
           onClick={toggleColorMode}
           className="flex items-center gap-3 px-4 py-3 rounded-lg w-full
-                     border border-white/10 bg-white/5
-                     hover:bg-white/[0.08] transition-colors"
+                     border border-border bg-card
+                     hover:bg-muted transition-colors"
         >
           <div className={`relative w-11 h-6 rounded-full transition-colors ${
-            colorMode === 'light' ? 'bg-accent' : 'bg-white/10'
+            colorMode === 'light' ? 'bg-accent' : 'bg-muted'
           }`}>
             <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
               colorMode === 'light' ? 'left-6' : 'left-1'
@@ -56,7 +56,7 @@ export function ThemeSettings() {
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${
                   accent === key
                     ? 'border-accent bg-accent/10'
-                    : 'border-white/10 bg-white/5 hover:bg-white/[0.08]'
+                    : 'border-border bg-card hover:bg-muted'
                 }`}
               >
                 <span className={`w-4 h-4 rounded-full shrink-0 ${theme.preview}`} />
@@ -88,12 +88,12 @@ export function ThemeSettings() {
           Preview
         </p>
 
-        <div className="p-4 rounded-lg border border-accent/20 bg-white/5">
+        <div className="p-4 rounded-lg border border-accent/20 bg-card">
           <div className="flex gap-2 mb-3 flex-wrap">
             <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-accent/10 text-accent border border-accent/20">
               Matemática
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-muted-foreground border border-white/10">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-card text-muted-foreground border border-border">
               IME • 2024
             </span>
           </div>
@@ -110,7 +110,7 @@ export function ThemeSettings() {
                 className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm question-font border transition-colors ${
                   i === 0
                     ? 'border-accent bg-accent/10 text-accent'
-                    : 'border-white/10 hover:border-accent/30'
+                    : 'border-border hover:border-accent/30'
                 }`}
               >
                 {alt}
@@ -122,7 +122,7 @@ export function ThemeSettings() {
             <button className="px-4 py-1.5 rounded text-xs font-medium bg-accent text-black">
               Responder
             </button>
-            <button className="px-4 py-1.5 rounded text-xs font-medium border border-white/10 text-muted-foreground">
+            <button className="px-4 py-1.5 rounded text-xs font-medium border border-border text-muted-foreground">
               Não sei
             </button>
           </div>

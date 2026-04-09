@@ -70,7 +70,7 @@ export default function SimuladosPage() {
 
   return (
     <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mx-auto w-full max-w-[1200px] px-6 py-8 md:px-10">
+      <div className="mx-auto w-full max-w-[1200px] px-6 py-8 md:px-10" style={{ zoom: 0.82 }}>
 
         {/* Voltar */}
         <div className="mb-6">

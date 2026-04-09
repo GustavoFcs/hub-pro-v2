@@ -22,6 +22,8 @@ import {
   X,
   FolderOpen,
   ChevronRight,
+  Bookmark,
+  BookmarkCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,6 +33,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+
+import { useSavedQuestions } from '@/hooks/useSavedQuestions'
 
 type Folder = {
   id: string
@@ -50,6 +54,7 @@ type SimuladoItem = {
 export default function MinhaListaPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { savedCount } = useSavedQuestions()
 
   const [folders, setFolders]     = useState<Folder[]>([])
   const [simulados, setSimulados] = useState<SimuladoItem[]>([])
@@ -235,7 +240,7 @@ export default function MinhaListaPage() {
   // ── Render ───────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mx-auto w-full max-w-[1100px] px-6 py-8 md:px-10">
+      <div className="mx-auto w-full max-w-[1100px] px-6 py-8 md:px-10" style={{ zoom: 0.82 }}>
 
         {/* Voltar */}
         <Link
@@ -285,6 +290,33 @@ export default function MinhaListaPage() {
                        text-sm text-white placeholder:text-muted-foreground
                        focus:outline-none focus:border-accent/50 transition-colors font-mono"
           />
+        </div>
+
+        {/* Seção Salvos — sempre presente */}
+        <div className="mb-8">
+          <h2 className="text-sm font-mono uppercase tracking-widest
+                          text-muted-foreground mb-3 flex items-center gap-2">
+            <Bookmark size={14} />
+            Salvos
+            <span className="text-accent font-bold">{savedCount}</span>
+          </h2>
+          <button
+            onClick={() => router.push('/minha-lista/salvos')}
+            className="w-full flex items-center justify-between p-4 rounded-lg
+                       border border-border bg-card hover:border-accent/50
+                       hover:bg-accent/5 transition-all duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <BookmarkCheck size={16} className="text-accent" />
+              <span className="text-sm font-medium text-foreground">
+                Questões Salvas
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {savedCount} questões
+              </span>
+            </div>
+            <ChevronRight size={16} className="text-muted-foreground" />
+          </button>
         </div>
 
         {/* Criar nova pasta — sempre visível */}

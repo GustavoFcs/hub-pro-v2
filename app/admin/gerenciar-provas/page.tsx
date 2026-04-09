@@ -96,13 +96,13 @@ export default function GerenciarProvasPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight uppercase">GERENCIAR PROVAS</h1>
-          <p className="text-[#999999] text-sm font-mono tracking-widest">HISTÓRICO E STATUS DO PIPELINE DE IMPORTAÇÃO</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2 tracking-tight uppercase">GERENCIAR PROVAS</h1>
+          <p className="text-muted-foreground text-sm font-mono tracking-widest">HISTÓRICO E STATUS DO PIPELINE DE IMPORTAÇÃO</p>
         </div>
         <Button
           onClick={loadProvas}
           variant="outline"
-          className="border-[#333] text-[#999] hover:text-white gap-2 font-bold text-xs uppercase tracking-widest"
+          className="border-border text-muted-foreground hover:text-foreground gap-2 font-bold text-xs uppercase tracking-widest"
         >
           <RefreshCw size={14} /> ATUALIZAR
         </Button>
@@ -127,15 +127,15 @@ export default function GerenciarProvasPage() {
                 : 'border-border hover:border-border/80'
             )}
           >
-            <p className="text-[10px] font-mono text-[#555] uppercase tracking-widest">{label}</p>
-            <p className="text-2xl font-bold text-white mt-1">{count}</p>
+            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">{label}</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{count}</p>
           </button>
         ))}
       </div>
 
       {/* Table */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-0 text-[10px] font-mono text-[#555] uppercase tracking-widest border-b border-[#222] px-6 py-3">
+        <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-0 text-[10px] font-mono text-muted-foreground uppercase tracking-widest border-b border-border px-6 py-3">
           <span className="w-16">Ano</span>
           <span>Título / Instituição</span>
           <span className="w-28 text-center">Status</span>
@@ -145,7 +145,7 @@ export default function GerenciarProvasPage() {
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center py-16 gap-3 text-[#555]">
+          <div className="flex items-center justify-center py-16 gap-3 text-muted-foreground">
             <Loader2 size={20} className="animate-spin text-accent" />
             <span className="text-sm font-mono">Carregando provas...</span>
           </div>
@@ -176,9 +176,9 @@ export default function GerenciarProvasPage() {
 
               {/* Título + institução */}
               <div className="min-w-0">
-                <p className="text-white text-sm font-medium truncate">{prova.titulo}</p>
+                <p className="text-foreground text-sm font-medium truncate">{prova.titulo}</p>
                 {prova.instituicoes && (
-                  <p className="text-[#555] text-xs font-mono mt-0.5">
+                  <p className="text-muted-foreground text-xs font-mono mt-0.5">
                     {prova.instituicoes.sigla ?? prova.instituicoes.nome}
                   </p>
                 )}
@@ -197,12 +197,12 @@ export default function GerenciarProvasPage() {
 
               {/* Questões */}
               <div className="w-20 text-center">
-                <span className="text-white text-sm font-mono font-bold">{prova.questoesCount}</span>
+                <span className="text-foreground text-sm font-mono font-bold">{prova.questoesCount}</span>
               </div>
 
               {/* Data */}
               <div className="w-24 text-right">
-                <span className="text-[#555] text-xs font-mono">{formatDate(prova.created_at)}</span>
+                <span className="text-muted-foreground text-xs font-mono">{formatDate(prova.created_at)}</span>
               </div>
 
               {/* Link para PDF */}
@@ -212,7 +212,7 @@ export default function GerenciarProvasPage() {
                     href={prova.pdf_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#444] hover:text-accent transition-colors"
+                    className="text-muted-foreground hover:text-accent transition-colors"
                     title="Ver PDF"
                   >
                     <ChevronRight size={16} />
@@ -226,7 +226,7 @@ export default function GerenciarProvasPage() {
         })}
       </div>
 
-      <p className="text-[#444] text-[10px] font-mono text-right">
+      <p className="text-muted-foreground text-[10px] font-mono text-right">
         {filtered.length} prova{filtered.length !== 1 ? 's' : ''} • {provas.reduce((a, p) => a + p.questoesCount, 0)} questões total
       </p>
     </div>

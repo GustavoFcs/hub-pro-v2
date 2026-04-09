@@ -189,8 +189,8 @@ function SplitFlapChar({ char, index, animationKey, skipEntrance, speed, playCli
 
   const tileDelay = 0.15 * index
 
-  const bgColor = isSettled ? "hsl(0, 0%, 0%)" : "rgba(249, 115, 22, 0.2)"
-  const textColor = isSettled ? "#ffffff" : "#f97316"
+  const bgColor = isSettled ? "hsl(0, 0%, 0%)" : "rgba(0, 180, 216, 0.2)"
+  const textColor = isSettled ? "#ffffff" : "#00B4D8"
 
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current)

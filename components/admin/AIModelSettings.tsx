@@ -133,7 +133,7 @@ export function AIModelSettings() {
               className={`px-4 py-2.5 rounded-lg border text-sm font-mono transition-all ${
                 config.provider === opt.value
                   ? 'border-accent bg-accent/10 text-accent'
-                  : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/[0.08]'
+                  : 'border-border bg-card text-muted-foreground hover:bg-muted'
               }`}
             >
               {opt.label}
@@ -156,7 +156,7 @@ export function AIModelSettings() {
             type="text"
             value={config[key]}
             onChange={e => setConfig(c => c ? { ...c, [key]: e.target.value } : c)}
-            className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5
+            className="w-full px-3 py-2 rounded-lg border border-border bg-card
                        text-sm font-mono text-foreground placeholder:text-muted-foreground
                        focus:outline-none focus:border-accent/60 transition-colors"
             placeholder="provider/model-name"
@@ -170,7 +170,7 @@ export function AIModelSettings() {
                 className={`px-2 py-0.5 rounded text-[9px] font-mono border transition-all ${
                   config[key] === m
                     ? 'border-accent text-accent bg-accent/10'
-                    : 'border-white/10 text-muted-foreground hover:border-accent/40'
+                    : 'border-border text-muted-foreground hover:border-accent/40'
                 }`}
               >
                 {m}
@@ -188,10 +188,10 @@ export function AIModelSettings() {
         <button
           onClick={() => setConfig(c => c ? { ...c, extractAsText: !c.extractAsText } : c)}
           className="flex items-center gap-3 px-4 py-3 rounded-lg w-full
-                     border border-white/10 bg-white/5 hover:bg-white/[0.08] transition-colors"
+                     border border-border bg-card hover:bg-muted transition-colors"
         >
           <div className={`relative w-11 h-6 rounded-full transition-colors ${
-            config.extractAsText ? 'bg-accent' : 'bg-white/10'
+            config.extractAsText ? 'bg-accent' : 'bg-muted'
           }`}>
             <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
               config.extractAsText ? 'left-6' : 'left-1'
@@ -224,7 +224,7 @@ export function AIModelSettings() {
         </button>
         <button
           onClick={handleReset}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border
                      text-sm font-mono text-muted-foreground hover:text-foreground hover:border-white/20 transition-colors"
         >
           <RotateCcw size={14} />

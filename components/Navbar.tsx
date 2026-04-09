@@ -29,10 +29,10 @@ export function Navbar() {
   const { user, logout } = useAuth()
 
   return (
-    <nav className="sticky top-0 z-50 h-[70px] w-full bg-[#0a0a0a] border-b border-accent flex items-center justify-between px-8 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 h-[70px] w-full bg-background border-b border-accent flex items-center justify-between px-8 backdrop-blur-md">
       {/* Logo */}
       <Link href="/app" className="flex items-center gap-2">
-        <span className="text-2xl font-bold text-white tracking-tight">📚 QB</span>
+        <span className="text-2xl font-bold text-foreground tracking-tight">📚 QB</span>
       </Link>
 
       {/* Navigation Menu (Center) */}
@@ -45,7 +45,7 @@ export function Navbar() {
               "text-sm font-medium transition-all duration-300 border-b-2 pb-1",
               pathname === item.href 
                 ? "text-accent border-accent" 
-                : "text-[#CCCCCC] border-transparent hover:text-accent hover:border-accent"
+                : "text-muted-foreground border-transparent hover:text-accent hover:border-accent"
             )}
           >
             {item.label}
@@ -56,15 +56,15 @@ export function Navbar() {
       {/* User Menu (Right) */}
       <div className="flex items-center gap-4">
         {/* AI Provider Selector */}
-        <div className="flex items-center gap-2 bg-[#1a1a1a] border border-accent rounded-full p-1">
-          <span className="text-[10px] font-bold text-white ml-2 uppercase tracking-tighter opacity-50">IA:</span>
+        <div className="flex items-center gap-2 bg-muted border border-accent rounded-full p-1">
+          <span className="text-[10px] font-bold text-foreground ml-2 uppercase tracking-tighter opacity-50">IA:</span>
           <button
             onClick={() => setAiProvider('claude')}
             className={cn(
               "px-3 py-1 text-[10px] font-bold rounded-full transition-all duration-200",
               aiProvider === 'claude' 
                 ? "bg-accent text-black" 
-                : "text-white hover:bg-white/10"
+                : "text-foreground hover:bg-muted"
             )}
           >
             CLAUDE
@@ -75,7 +75,7 @@ export function Navbar() {
               "px-3 py-1 text-[10px] font-bold rounded-full transition-all duration-200",
               aiProvider === 'gpt' 
                 ? "bg-accent text-black" 
-                : "text-white hover:bg-white/10"
+                : "text-foreground hover:bg-muted"
             )}
           >
             GPT
@@ -86,13 +86,13 @@ export function Navbar() {
         <DropdownMenu>
           <DropdownMenuTrigger className="outline-none">
             <Avatar className="h-9 w-9 border border-accent/30 hover:border-accent transition-colors duration-200">
-              <AvatarFallback className="bg-[#1a1a1a] text-white text-xs">
+              <AvatarFallback className="bg-muted text-foreground text-xs">
                 {user?.name?.substring(0, 2).toUpperCase() || <User size={16} />}
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-[#0a0a0a] border-accent text-white p-2 mt-2">
-            <div className="px-2 py-1.5 text-xs text-[#999999] font-mono">
+          <DropdownMenuContent align="end" className="w-56 bg-background border-accent text-foreground p-2 mt-2">
+            <div className="px-2 py-1.5 text-xs text-muted-foreground font-mono">
               CONTA: {user?.email || 'Visitante'}
             </div>
             <DropdownMenuSeparator className="bg-accent/20" />

@@ -74,7 +74,7 @@ export function SimuladoFloatingBar() {
 
         {/* Criar lista panel */}
         {open && (
-          <div className="rounded-2xl bg-[#111] border border-accent/40 shadow-2xl shadow-accent/10
+          <div className="rounded-2xl bg-muted border border-accent/40 shadow-2xl shadow-accent/10
                           backdrop-blur-sm p-5 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
 
             <div className="flex items-center gap-2">
@@ -95,7 +95,7 @@ export function SimuladoFloatingBar() {
                 onChange={e => setTitle(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
                 placeholder="Ex: Matemática IME 2024"
-                className="bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-2 text-sm text-white
+                className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground
                            placeholder:text-muted-foreground focus:outline-none focus:border-accent/50
                            transition-colors font-mono"
               />
@@ -111,7 +111,7 @@ export function SimuladoFloatingBar() {
                 <select
                   value={folderId}
                   onChange={e => setFolderId(e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg pl-8 pr-3 py-2 text-sm
+                  className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-2 text-sm
                              text-muted-foreground focus:outline-none focus:border-accent/50 transition-colors
                              font-mono appearance-none"
                 >
@@ -139,7 +139,7 @@ export function SimuladoFloatingBar() {
               <button
                 onClick={() => { setOpen(false); router.push('/simulados/novo') }}
                 className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground
-                           hover:text-white transition-colors underline-offset-2 hover:underline"
+                           hover:text-foreground transition-colors underline-offset-2 hover:underline"
               >
                 Montar avançado <ChevronRight size={11} />
               </button>
@@ -149,7 +149,7 @@ export function SimuladoFloatingBar() {
 
         {/* Floating bar */}
         <div className="flex items-center gap-4 px-5 py-3 rounded-2xl
-                        bg-[#111] border border-accent/40 shadow-2xl shadow-accent/10 backdrop-blur-sm">
+                        bg-muted border border-accent/40 shadow-2xl shadow-accent/10 backdrop-blur-sm">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <FileText size={16} className="text-accent shrink-0" />
             <span className="text-sm font-medium truncate">
@@ -158,7 +158,7 @@ export function SimuladoFloatingBar() {
             </span>
           </div>
 
-          <div className="w-px h-4 bg-white/10 shrink-0" />
+          <div className="w-px h-4 bg-muted shrink-0" />
 
           <button
             onClick={() => setOpen(o => !o)}
@@ -171,7 +171,7 @@ export function SimuladoFloatingBar() {
 
           <button
             onClick={clearList}
-            className="text-muted-foreground hover:text-white transition-colors shrink-0"
+            className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
             title="Limpar seleção"
           >
             <X size={14} />

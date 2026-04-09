@@ -62,6 +62,8 @@ export type Questao = {
   crop_image_path: string | null
   gabarito: 'a' | 'b' | 'c' | 'd' | 'e' | null
   anulada: boolean
+  frentes: string[]
+  tempo_estimado_segundos: number | null
   created_at: string
   updated_at: string
 }
@@ -280,6 +282,8 @@ export type Database = {
           crop_image_path: string | null
           gabarito: 'a' | 'b' | 'c' | 'd' | 'e' | null
           anulada: boolean
+          frentes: string[]
+          tempo_estimado_segundos: number | null
           created_at: string
           updated_at: string
         }
@@ -300,6 +304,8 @@ export type Database = {
           crop_image_path?: string | null
           gabarito?: 'a' | 'b' | 'c' | 'd' | 'e' | null
           anulada?: boolean
+          frentes?: string[]
+          tempo_estimado_segundos?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -319,6 +325,8 @@ export type Database = {
           crop_image_path?: string | null
           gabarito?: 'a' | 'b' | 'c' | 'd' | 'e' | null
           anulada?: boolean
+          frentes?: string[]
+          tempo_estimado_segundos?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -497,6 +505,25 @@ export type Database = {
           pulada?: boolean
           correta?: boolean | null
           answered_at?: string
+        }
+        Relationships: []
+      }
+      questoes_salvas: {
+        Row: {
+          id: string
+          user_id: string
+          questao_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          questao_id: string
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          questao_id?: string
         }
         Relationships: []
       }

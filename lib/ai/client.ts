@@ -21,7 +21,9 @@ export type AnalyzedQuestion = {
   alternatives: { letra: 'a' | 'b' | 'c' | 'd' | 'e'; texto: string }[]
   subject: string
   subtopic: string
+  frentes: string[]
   difficulty: 'facil' | 'medio' | 'dificil' | 'muito_dificil'
+  tempo_estimado_segundos: number
   visualElement: VisualElement
   gabarito?: string
 }
@@ -40,8 +42,18 @@ export type ExamContext = {
 
 // Prompt
 
-const SYSTEM_PROMPT = `Voce e um sistema especializado em digitalizacao de provas de vestibular e concursos brasileiros.
-Extraia TODAS as questoes do conteudo fornecido. Retorne APENAS JSON valido, sem texto adicional.`
+const SYSTEM_PROMPT = `Você é um sistema especializado em digitalização de provas \
+de vestibulares e concursos brasileiros.
+Extraia TODAS as questões do conteúdo fornecido. Retorne APENAS JSON válido, sem texto adicional.
+
+REGRAS CRÍTICAS DE ENCODING:
+- Preserve TODOS os caracteres especiais do português: ç, Ç, ã, õ, â, ê, î, ô, û, à, é, í, ó, ú
+- NUNCA substitua ç por c, ~ ou qualquer outro caractere
+- NUNCA substitua ã por a, ~a ou qualquer variante
+- Se o PDF tiver encoding Latin-1 ou ISO-8859-1, converta corretamente para UTF-8
+- Sequências como C + ̧ (C + cedilha combinante) devem ser compostas como Ç (U+00C7)
+- Sequências como a + ̃ (a + til combinante) devem ser compostas como ã (U+00E3)
+- Aplique normalização NFC mentalmente antes de retornar qualquer texto`
 
 function buildPrompt(context: ExamContext): string {
   return `Analise TODAS as paginas desta prova de ${context.institution} ${context.year}.
@@ -67,8 +79,43 @@ NUNCA retorne alternativas com texto vazio.
 
 - subject: materia
 - subtopic: subtopico especifico
-- difficulty: "facil", "medio" ou "dificil"
+- difficulty: "facil", "medio", "dificil" ou "muito_dificil"
+- frentes: array de strings com topicos especificos (1 a 4 frentes)
+- tempo_estimado_segundos: inteiro (segundos estimados para resolver)
 - visualElement: { type: "crop" | "text_only", pageNumber: number | null, description: string }
+
+REGRAS PARA "frentes" (OBRIGATORIO):
+- Liste os topicos especificos desta questao como array de strings
+- Cada questao pode ter de 1 a 4 frentes
+- Use nomes especificos do conteudo, NAO genericos:
+  BOM: "Dinamica", "Campo Eletrico", "MUV", "Termoquimica"
+  BOM: "Geometria Plana", "Progressao Geometrica", "Oxirreducao"
+  RUIM: "Operacao algebrica", "Calculo", "Problema"
+- Para fisica: use nomes de capitulos (ex: "Cinematica", "Optica Geometrica")
+- Para quimica: use reacoes e ramos (ex: "Cinetica Quimica", "pH e pOH")
+- Para matematica: use topicos precisos (ex: "Funcao Afim", "Logaritmo")
+- Para biologia: use sistemas e processos (ex: "Fotossintese", "Mitose")
+- NAO inclua a materia como frente (ex: nao coloque "Fisica" em frentes)
+- NAO inclua dificuldade, tipo ou formato como frente
+
+REGRAS PARA "tempo_estimado_segundos":
+- Estime o tempo medio que um estudante preparado levaria para resolver
+- Base: questao simples de calculo direto = 90s
+- Ajuste por:
+  + Texto longo (>5 linhas): +30s
+  + Multiplos dados numericos: +20s
+  + Figura/grafico para interpretar: +30s
+  + Multiplas etapas de raciocinio: +30s por etapa
+  + Questao de lingua portuguesa (interpretacao): +45s
+- Faixa tipica: 60s (trivial) a 360s (muito complexa)
+- Retornar como inteiro (segundos)
+
+REGRAS PARA O ENUNCIADO:
+- Quando encontrar "Dado:", "Dados:", "Observacao:", "Observacoes:",
+  "Nota:", "Atencao:" NO MEIO do enunciado, inserir \\n\\n ANTES dessas
+  palavras para separar em paragrafo proprio.
+- Cada bullet de lista deve estar em linha separada com \\n.
+- NUNCA juntar "Dados:" ou "Observacoes:" na mesma linha do paragrafo anterior.
 
 REGRAS DE ELEMENTOS VISUAIS:
 - Se houver figura/grafico/diagrama/circuito: type="crop", pageNumber=<pagina>, description=<descricao>

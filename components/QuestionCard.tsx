@@ -4,10 +4,31 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { MathText } from '@/components/ui/MathText'
-import { DIFFICULTY_CONFIG, type Difficulty } from '@/lib/difficulty/calculator'
 import { useSimuladoStore } from '@/lib/simulado/store'
-import { Bookmark, PlayCircle, ExternalLink, Check, Eye, EyeOff } from 'lucide-react'
+import { Bookmark, BookmarkCheck, PlayCircle, ExternalLink, Check, Eye, EyeOff, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+const DIFICULDADE_LABEL: Record<string, string> = {
+  facil:        'Nivelamento',
+  medio:        'Consolidação',
+  dificil:      'Aprofundamento',
+  muito_dificil: 'Especialização Avançada',
+}
+
+const DIFICULDADE_COLOR: Record<string, string> = {
+  facil:        'text-emerald-400 border-emerald-400/30 bg-emerald-400/10',
+  medio:        'text-blue-400   border-blue-400/30   bg-blue-400/10',
+  dificil:      'text-orange-400 border-orange-400/30 bg-orange-400/10',
+  muito_dificil: 'text-red-400    border-red-400/30    bg-red-400/10',
+}
+
+function formatTempo(segundos: number | null): string {
+  if (!segundos) return ''
+  if (segundos < 60)  return `${segundos}s`
+  const min = Math.floor(segundos / 60)
+  const sec = segundos % 60
+  return sec > 0 ? `${min}min ${sec}s` : `${min}min`
+}
 
 interface Alternative {
   id: string
@@ -42,9 +63,23 @@ interface Question {
   videoProfessor?: string | null
   gabarito?: string | null
   anulada?: boolean
+  // Frentes e tempo estimado
+  frentes?: string[]
+  dificuldade?: string
+  tempo_estimado_segundos?: number | null
 }
 
-export function QuestionCard({ question, questionIndex }: { question: Question; questionIndex?: number }) {
+export function QuestionCard({
+  question,
+  questionIndex,
+  isSaved: isSavedProp,
+  onToggleSave,
+}: {
+  question: Question
+  questionIndex?: number
+  isSaved?: boolean
+  onToggleSave?: (id: string) => void
+}) {
   const [selectedAlternative, setSelectedAlternative] = useState<string | null>(null)
   const [showDetails, setShowDetails] = useState(false)
   const [answered, setAnswered] = useState(false)
@@ -53,10 +88,6 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
     if (!selectedAlternative || answered) return
     setAnswered(true)
   }
-
-  // Normalizar dificuldade para chave do DIFFICULTY_CONFIG
-  const diffKey = question.difficulty?.toLowerCase().replace(' ', '_').replace('á', 'a').replace('é', 'e') as Difficulty
-  const diffConfig = DIFFICULTY_CONFIG[diffKey]
 
   const addQuestion    = useSimuladoStore(s => s.addQuestion)
   const removeQuestion = useSimuladoStore(s => s.removeQuestion)
@@ -78,7 +109,7 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
         </div>
         <button
           onClick={() => setShowDetails(v => !v)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/10
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border
                      text-muted-foreground hover:border-accent/40 hover:text-accent
                      transition-colors font-mono text-[9px] uppercase tracking-widest"
           title={showDetails ? 'Ocultar detalhes' : 'Ver dificuldade e assunto'}
@@ -100,13 +131,13 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
           <div className="flex flex-wrap gap-1.5 mb-3">
             {question.year > 0 && (
               <span className="px-2 py-0.5 rounded text-[10px] font-mono
-                               bg-white/5 text-muted-foreground border border-white/10">
+                               bg-card text-muted-foreground border border-border">
                 {question.year}
               </span>
             )}
             {question.institution && (
               <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase
-                               bg-white/5 text-muted-foreground border border-white/10">
+                               bg-card text-muted-foreground border border-border">
                 {question.institution}
               </span>
             )}
@@ -116,15 +147,35 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
                 {question.subject}
               </span>
             )}
-            {question.difficulty && (
+            {question.dificuldade && (
               <span className={cn(
-                'px-2 py-0.5 rounded text-[10px] font-mono border border-current/20 opacity-0 pointer-events-none select-none',
-                diffConfig?.bg ?? 'bg-white/5',
-                diffConfig?.color ?? 'text-muted-foreground',
+                'text-[10px] font-mono px-2 py-0.5 rounded border',
+                DIFICULDADE_COLOR[question.dificuldade] ?? 'text-muted-foreground border-border bg-card',
               )}>
-                {diffConfig?.label ?? question.difficulty}
+                {DIFICULDADE_LABEL[question.dificuldade] ?? question.dificuldade}
               </span>
             )}
+            {question.tempo_estimado_segundos && (
+              <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
+                <Clock size={10} />
+                {formatTempo(question.tempo_estimado_segundos)}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Tags de frentes — visíveis apenas quando expandido */}
+        {showDetails && question.frentes && question.frentes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {question.frentes.map(frente => (
+              <span
+                key={frente}
+                className="text-[10px] font-mono px-2 py-0.5 rounded-full
+                           border border-accent/20 bg-accent/5 text-accent/70"
+              >
+                {frente}
+              </span>
+            ))}
           </div>
         )}
 
@@ -220,19 +271,40 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
               href={question.videoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={cn(
-                'inline-flex items-center gap-2 border border-red-500/40 text-red-400',
-                'hover:bg-red-500/10 transition-all duration-200 rounded-md font-semibold text-xs py-2 px-4'
-              )}
-              title={question.videoTitulo ?? 'Ver correção em vídeo'}
+              title={question.videoProfessor
+                ? `Ver resolução com ${question.videoProfessor}`
+                : 'Ver resolução em vídeo'
+              }
+              className="h-9 px-4 text-xs font-semibold rounded-md inline-flex
+                         items-center gap-2 border border-red-500/40 text-red-400
+                         hover:bg-red-500/10 transition-all duration-200"
             >
               <PlayCircle size={13} />
-              {question.videoProfessor ? `VER COM ${question.videoProfessor.toUpperCase().slice(0, 20)}` : 'VER CORREÇÃO'}
+              {question.videoProfessor
+                ? `VER COM ${question.videoProfessor.toUpperCase().slice(0, 22)}`
+                : 'VER CORREÇÃO'
+              }
               <ExternalLink size={10} className="opacity-50" />
             </a>
           )}
 
           <div className="flex-1" />
+
+          {/* Salvar questão (bookmark persistente) */}
+          {onToggleSave && (
+            <button
+              onClick={() => onToggleSave(question.id)}
+              title={isSavedProp ? 'Remover dos salvos' : 'Salvar questão'}
+              className={cn(
+                "flex items-center justify-center w-9 h-9 rounded-md border transition-all duration-300",
+                isSavedProp
+                  ? "border-accent text-accent bg-accent/10 hover:bg-accent/20"
+                  : "border-border text-muted-foreground hover:border-accent hover:text-accent"
+              )}
+            >
+              {isSavedProp ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+            </button>
+          )}
 
           {/* Icon-only add-to-list button */}
           <button
@@ -252,7 +324,7 @@ export function QuestionCard({ question, questionIndex }: { question: Question; 
           <Button
             onClick={handleResponder}
             className={cn(
-              "transition-all duration-300 rounded-md font-semibold text-xs py-2 px-5",
+              "h-9 px-4 text-xs font-semibold rounded-md transition-all duration-300",
               answered
                 ? selectedAlternative === question.gabarito
                   ? "bg-green-600 text-white cursor-default hover:bg-green-600"

@@ -38,6 +38,7 @@ export function CropSelector({
   const [error, setError] = useState<string | null>(null)
   const isDraggingRef = useRef(false)
   const startPosRef = useRef({ x: 0, y: 0 })
+  const rafRef = useRef<number | null>(null)
 
   // ── Draw (reads from refs, never stale) ──────────────────────────
   const draw = useCallback(() => {
@@ -135,12 +136,34 @@ export function CropSelector({
     if (canvasReady) draw()
   }, [currentBox, canvasReady, draw])
 
+  // ── Recalculate on container resize ────────────────────────────────
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      draw()
+    })
+    if (canvasRef.current?.parentElement) {
+      observer.observe(canvasRef.current.parentElement)
+    }
+    return () => observer.disconnect()
+  }, [draw])
+
   // ── Mouse events (refs only — no state in hot path) ───────────────
   const getPct = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect()
+    const canvas = e.currentTarget as HTMLCanvasElement
+    const rect   = canvas.getBoundingClientRect()
+
+    // Escala real: pixels nativos / tamanho CSS
+    const scaleX = canvas.width  / rect.width
+    const scaleY = canvas.height / rect.height
+
+    // Coordenadas em pixels nativos
+    const nativeX = (e.clientX - rect.left) * scaleX
+    const nativeY = (e.clientY - rect.top)  * scaleY
+
+    // Converter para porcentagem relativa ao canvas nativo
     return {
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top)  / rect.height) * 100,
+      x: (nativeX / canvas.width)  * 100,
+      y: (nativeY / canvas.height) * 100,
     }
   }
 
@@ -162,7 +185,9 @@ export function CropSelector({
     }
     // Draw directly to avoid setState thrashing during drag
     currentBoxRef.current = box
-    draw()
+
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(() => draw())
   }
 
   const onMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -185,7 +210,7 @@ export function CropSelector({
       </div>
 
       {/* Canvas — always in DOM so containerRef.clientWidth is measurable */}
-      <div ref={containerRef} className="relative w-full rounded-lg overflow-hidden border border-accent/30 bg-[#0a0a0a]">
+      <div ref={containerRef} className="relative w-full rounded-lg overflow-hidden border border-accent/30 bg-background">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center h-48">
             <Loader2 size={20} className="animate-spin text-accent" />
@@ -202,7 +227,10 @@ export function CropSelector({
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
-          onMouseLeave={(e) => onMouseUp(e)}
+          onMouseLeave={() => {
+            // Apenas parar de arrastar, não confirmar
+            isDraggingRef.current = false
+          }}
         />
       </div>
 
@@ -211,8 +239,8 @@ export function CropSelector({
         <button
           onClick={() => setCurrentBox(initialCropBox ?? null)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs
-                     border border-white/10 text-muted-foreground
-                     hover:border-white/20 hover:text-white transition-colors"
+                     border border-border text-muted-foreground
+                     hover:border-border hover:text-foreground transition-colors"
         >
           <RotateCcw size={12} />
           Resetar sugestão da IA
@@ -221,8 +249,8 @@ export function CropSelector({
         <button
           onClick={onSkip}
           className="px-3 py-1.5 rounded text-xs
-                     border border-white/10 text-muted-foreground
-                     hover:border-white/20 hover:text-white transition-colors"
+                     border border-border text-muted-foreground
+                     hover:border-border hover:text-foreground transition-colors"
         >
           Pular (sem imagem)
         </button>

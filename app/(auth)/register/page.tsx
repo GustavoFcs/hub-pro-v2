@@ -50,7 +50,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
       <div
         className="absolute inset-0 z-0 bg-cover bg-center"
         style={{
@@ -58,19 +58,19 @@ export default function RegisterPage() {
           filter: "blur(15px) brightness(0.4) saturate(0.5)",
         }}
       />
-      <div className="absolute inset-0 z-0 bg-black/80" />
+      <div className="absolute inset-0 z-0 bg-background/80" />
 
-      <div className="relative z-10 w-full max-w-[400px] bg-black/60 backdrop-blur-xl border border-accent/40 rounded-none shadow-2xl animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+      <div className="relative z-10 w-full max-w-[400px] bg-background/60 backdrop-blur-xl border border-accent/40 rounded-none shadow-2xl animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
         <div className="p-8 space-y-8">
           {/* Header */}
           <div className="text-center space-y-6">
             <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
-              <h1 className="text-4xl font-bold text-white uppercase tracking-[0.4em] font-[var(--font-bebas)]">
+              <h1 className="text-4xl font-bold text-foreground uppercase tracking-[0.4em] font-[var(--font-bebas)]">
                 DERELICT
               </h1>
             </Link>
             <div className="space-y-2">
-              <h2 className="text-xl font-bold text-white uppercase tracking-[0.3em] font-[var(--font-bebas)]">
+              <h2 className="text-xl font-bold text-foreground uppercase tracking-[0.3em] font-[var(--font-bebas)]">
                 Criar Conta
               </h2>
               <p className="text-[10px] font-mono text-accent/60 uppercase tracking-[0.2em] italic">
@@ -84,7 +84,7 @@ export default function RegisterPage() {
               <div className="flex justify-center">
                 <UserCheck size={48} className="text-accent" />
               </div>
-              <p className="font-mono text-xs text-white leading-relaxed">
+              <p className="font-mono text-xs text-foreground leading-relaxed">
                 Verifique seu e-mail para confirmar o cadastro.
               </p>
               <Link href="/login">
@@ -106,7 +106,7 @@ export default function RegisterPage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
-                      className="bg-background/50 border-border/50 text-white focus:border-accent h-11 rounded-none pl-10 text-xs transition-all"
+                      className="bg-background/50 border-border/50 text-foreground focus:border-accent h-11 rounded-none pl-10 text-xs transition-all"
                     />
                   </div>
                 </div>
@@ -121,7 +121,7 @@ export default function RegisterPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="bg-background/50 border-border/50 text-white focus:border-accent h-11 rounded-none pl-10 text-xs transition-all"
+                      className="bg-background/50 border-border/50 text-foreground focus:border-accent h-11 rounded-none pl-10 text-xs transition-all"
                     />
                   </div>
                 </div>
@@ -136,7 +136,7 @@ export default function RegisterPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="bg-background/50 border-border/50 text-white focus:border-accent h-11 rounded-none pl-10 text-xs transition-all"
+                      className="bg-background/50 border-border/50 text-foreground focus:border-accent h-11 rounded-none pl-10 text-xs transition-all"
                     />
                   </div>
                 </div>
@@ -151,7 +151,7 @@ export default function RegisterPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      className="bg-background/50 border-border/50 text-white focus:border-accent h-11 rounded-none pl-10 text-xs transition-all"
+                      className="bg-background/50 border-border/50 text-foreground focus:border-accent h-11 rounded-none pl-10 text-xs transition-all"
                     />
                   </div>
                 </div>

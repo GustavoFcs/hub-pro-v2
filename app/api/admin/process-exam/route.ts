@@ -158,6 +158,21 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── 8.1. Normalizar NFC — corrigir ç/ã/ê decompostos ─────
+  function normalizeNFC(val: unknown): unknown {
+    if (typeof val === 'string') return val.normalize('NFC')
+    if (Array.isArray(val)) return val.map(normalizeNFC)
+    if (val && typeof val === 'object') {
+      return Object.fromEntries(
+        Object.entries(val).map(([k, v]) => [k, normalizeNFC(v)])
+      )
+    }
+    return val
+  }
+  for (let i = 0; i < allQuestions.length; i++) {
+    allQuestions[i] = normalizeNFC(allQuestions[i]) as ProcessedQuestion
+  }
+
   console.log(`[process-exam] Questões extraídas: ${allQuestions.length} em ${pages.length} páginas`)
 
   // ── 8.5. Refinar dificuldade com calculator ───────────────

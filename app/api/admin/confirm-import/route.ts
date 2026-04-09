@@ -7,6 +7,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { searchCorrectionVideo } from '@/lib/youtube/searchCorrection'
 
+function normalizeEnunciado(text: string): string {
+  let t = text.normalize('NFC')
+
+  const keywords = [
+    'Dado:', 'Dados:', 'Observação:', 'Observações:',
+    'Nota:', 'Atenção:', 'Considere:', 'Considere que:',
+  ]
+  for (const kw of keywords) {
+    t = t.replace(new RegExp(`([^\n])\\s*(${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'g'), `$1\n\n$2`)
+  }
+
+  // Bullets em linhas separadas
+  t = t.replace(/([^\n])\s*([•\-\*])\s/g, '$1\n$2 ')
+
+  return t.trim()
+}
+
 interface AlternativaInput {
   letra: 'a' | 'b' | 'c' | 'd' | 'e'
   texto: string
@@ -19,8 +36,10 @@ interface QuestaoInput {
   alternatives: AlternativaInput[]
   subject: string         // nome da matéria (será resolvido para ID)
   subtopic: string        // nome do subtópico (será resolvido para ID)
-  difficulty: 'facil' | 'medio' | 'dificil'
+  difficulty: 'facil' | 'medio' | 'dificil' | 'muito_dificil'
   gabarito?: string
+  frentes?: string[]
+  tempo_estimado_segundos?: number | null
   visualElement: {
     type: 'crop' | 'svg' | 'reconstruct' | 'text_only'
     description: string
@@ -137,8 +156,10 @@ export async function POST(req: NextRequest) {
         instituicao_id: instituicaoId,
         ano,
         numero_questao: q.questionNumber,
-        enunciado: q.enunciado,
+        enunciado: normalizeEnunciado(q.enunciado),
         dificuldade: q.difficulty,
+        frentes: q.frentes ?? [],
+        tempo_estimado_segundos: q.tempo_estimado_segundos ?? null,
         tem_imagem,
         imagem_tipo,
         imagem_url,

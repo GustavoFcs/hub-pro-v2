@@ -131,14 +131,14 @@ export function SVGReconstructPanel({
           </span>
 
           {/* Toggle preview / código */}
-          <div className="flex items-center gap-1 rounded border border-white/10 p-0.5">
+          <div className="flex items-center gap-1 rounded border border-border p-0.5">
             <button
               onClick={() => setViewMode('preview')}
               className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px]
                          transition-colors ${
                 viewMode === 'preview'
                   ? 'bg-accent/20 text-accent'
-                  : 'text-muted-foreground hover:text-white'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Eye size={10} /> Preview
@@ -149,7 +149,7 @@ export function SVGReconstructPanel({
                          transition-colors ${
                 viewMode === 'code'
                   ? 'bg-accent/20 text-accent'
-                  : 'text-muted-foreground hover:text-white'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Code2 size={10} /> SVG
@@ -160,7 +160,7 @@ export function SVGReconstructPanel({
         {/* Conteúdo */}
         {viewMode === 'preview' ? (
           <div
-            className="rounded-lg border border-white/10 bg-white p-4
+            className="rounded-lg border border-border bg-white p-4
                        flex items-center justify-center min-h-[150px]"
             dangerouslySetInnerHTML={{ __html: svgContent }}
           />
@@ -168,8 +168,8 @@ export function SVGReconstructPanel({
           <textarea
             value={svgContent}
             onChange={e => setSvgContent(e.target.value)}
-            className="w-full h-40 font-mono text-[10px] bg-[#0a0a0a]
-                       border border-white/10 rounded-lg p-3
+            className="w-full h-40 font-mono text-[10px] bg-background
+                       border border-border rounded-lg p-3
                        text-muted-foreground resize-y focus:outline-none
                        focus:border-accent/40"
             spellCheck={false}
@@ -181,7 +181,7 @@ export function SVGReconstructPanel({
           <button
             onClick={reconstruct}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs
-                       border border-white/10 text-muted-foreground
+                       border border-border text-muted-foreground
                        hover:border-accent/30 hover:text-accent transition-colors"
           >
             <RotateCcw size={11} />
@@ -191,7 +191,7 @@ export function SVGReconstructPanel({
           <button
             onClick={reject}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs
-                       border border-white/10 text-muted-foreground
+                       border border-border text-muted-foreground
                        hover:border-red-400/30 hover:text-red-400 transition-colors"
           >
             <X size={11} />
@@ -222,7 +222,7 @@ export function SVGReconstructPanel({
         <button
           onClick={reconstruct}
           className="self-start flex items-center gap-1.5 px-3 py-1.5
-                     rounded text-xs border border-white/10
+                     rounded text-xs border border-border
                      text-muted-foreground hover:text-accent transition-colors"
         >
           <RotateCcw size={11} />
