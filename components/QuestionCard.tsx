@@ -7,20 +7,7 @@ import { MathText } from '@/components/ui/MathText'
 import { useSimuladoStore } from '@/lib/simulado/store'
 import { Bookmark, BookmarkCheck, PlayCircle, ExternalLink, Check, Eye, EyeOff, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const DIFICULDADE_LABEL: Record<string, string> = {
-  facil:        'Nivelamento',
-  medio:        'Consolidação',
-  dificil:      'Aprofundamento',
-  muito_dificil: 'Especialização Avançada',
-}
-
-const DIFICULDADE_COLOR: Record<string, string> = {
-  facil:        'text-emerald-400 border-emerald-400/30 bg-emerald-400/10',
-  medio:        'text-blue-400   border-blue-400/30   bg-blue-400/10',
-  dificil:      'text-orange-400 border-orange-400/30 bg-orange-400/10',
-  muito_dificil: 'text-red-400    border-red-400/30    bg-red-400/10',
-}
+import { DIFICULDADE_LABEL, DIFICULDADE_COLOR } from '@/lib/constants/dificuldade'
 
 function formatTempo(segundos: number | null): string {
   if (!segundos) return ''
@@ -109,13 +96,16 @@ export function QuestionCard({
         </div>
         <button
           onClick={() => setShowDetails(v => !v)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border
-                     text-muted-foreground hover:border-accent/40 hover:text-accent
-                     transition-colors font-mono text-[9px] uppercase tracking-widest"
-          title={showDetails ? 'Ocultar detalhes' : 'Ver dificuldade e assunto'}
+          className={cn(
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border",
+            "text-[11px] font-mono transition-all duration-200",
+            showDetails
+              ? "border-accent/40 text-accent bg-accent/5"
+              : "border-border text-muted-foreground hover:border-accent/40 hover:text-accent"
+          )}
         >
           {showDetails ? <EyeOff size={11} /> : <Eye size={11} />}
-          {showDetails ? 'Ocultar' : 'Detalhes'}
+          {showDetails ? 'Ocultar' : 'Ver detalhes'}
         </button>
         {question.anulada && (
           <span className="ml-2 px-2.5 py-1 rounded-lg bg-red-500/15 border border-red-500/40
@@ -156,8 +146,10 @@ export function QuestionCard({
               </span>
             )}
             {question.tempo_estimado_segundos && (
-              <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
-                <Clock size={10} />
+              <span className="text-[10px] font-mono text-muted-foreground
+                               flex items-center gap-1 border border-border
+                               rounded px-2 py-0.5">
+                <Clock size={9} />
                 {formatTempo(question.tempo_estimado_segundos)}
               </span>
             )}
@@ -185,12 +177,12 @@ export function QuestionCard({
 
         {/* Elemento visual — crop */}
         {question.visualElement?.type === 'crop' && question.visualElement?.imageUrl && (
-          <div className="mb-3">
+          <div className="mb-3 rounded-lg border border-border overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={question.visualElement.imageUrl}
               alt={question.visualElement.description ?? 'Imagem da questão'}
-              className="max-w-full h-auto max-h-56 object-contain rounded-lg border border-border block"
+              className="max-w-full h-auto max-h-56 object-contain block"
             />
           </div>
         )}
@@ -199,7 +191,7 @@ export function QuestionCard({
         {question.visualElement?.type === 'svg' && question.visualElement?.svgContent && (
           <div className="mb-3">
             <div
-              className="question-svg-preview rounded-lg border border-border bg-white p-2"
+              className="question-svg-preview rounded-lg border border-border bg-white p-2 overflow-hidden"
               dangerouslySetInnerHTML={{ __html: question.visualElement.svgContent }}
             />
             <p className="mt-1 text-[10px] text-muted-foreground font-mono italic">
@@ -275,16 +267,34 @@ export function QuestionCard({
                 ? `Ver resolução com ${question.videoProfessor}`
                 : 'Ver resolução em vídeo'
               }
-              className="h-9 px-4 text-xs font-semibold rounded-md inline-flex
-                         items-center gap-2 border border-red-500/40 text-red-400
-                         hover:bg-red-500/10 transition-all duration-200"
+              className="group relative h-9 px-4 text-xs font-semibold rounded-md
+                         inline-flex items-center gap-2 border border-red-500/40
+                         text-red-400 hover:bg-red-500/10 hover:border-red-500/60
+                         transition-all duration-300 overflow-hidden"
             >
-              <PlayCircle size={13} />
-              {question.videoProfessor
-                ? `VER COM ${question.videoProfessor.toUpperCase().slice(0, 22)}`
-                : 'VER CORREÇÃO'
-              }
-              <ExternalLink size={10} className="opacity-50" />
+              <PlayCircle size={13} className="shrink-0" />
+
+              {/* Texto padrão — some no hover */}
+              <span className="transition-all duration-300
+                               group-hover:opacity-0 group-hover:max-w-0
+                               group-hover:overflow-hidden whitespace-nowrap">
+                VER RESOLUÇÃO
+              </span>
+
+              {/* Nome do canal — aparece no hover com slide */}
+              {question.videoProfessor && (
+                <span className="absolute left-9 max-w-0 overflow-hidden whitespace-nowrap
+                                 opacity-0 transition-all duration-300
+                                 group-hover:max-w-[180px] group-hover:opacity-100
+                                 text-red-300 font-medium">
+                  {question.videoProfessor}
+                </span>
+              )}
+
+              <ExternalLink
+                size={10}
+                className="opacity-40 group-hover:opacity-70 transition-opacity shrink-0 ml-auto"
+              />
             </a>
           )}
 

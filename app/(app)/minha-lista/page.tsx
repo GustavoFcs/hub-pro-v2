@@ -24,6 +24,8 @@ import {
   ChevronRight,
   Bookmark,
   BookmarkCheck,
+  FolderInput,
+  FolderMinus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,6 +33,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
@@ -132,6 +137,15 @@ export default function MinhaListaPage() {
     load()
   }
 
+  async function moveSimuladoToPasta(simuladoId: string, folderId: string | null) {
+    const supabase = createClient()
+    await supabase
+      .from('simulados')
+      .update({ folder_id: folderId })
+      .eq('id', simuladoId)
+    await load()
+  }
+
   async function exportPDF(s: SimuladoItem) {
     const detail = await fetch(`/api/simulado/${s.id}`).then(r => r.json())
     if (!detail?.questions?.length) { alert('Simulado vazio'); return }
@@ -153,10 +167,12 @@ export default function MinhaListaPage() {
       })),
     }
 
+    const includeGabarito = window.confirm('Incluir gabarito no PDF?')
+
     const res = await fetch('/api/simulado/export-pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ simulado: payload, includeGabarito: false }),
+      body: JSON.stringify({ simulado: payload, includeGabarito }),
     })
     if (!res.ok) { alert('Erro ao exportar'); return }
     const blob = await res.blob()
@@ -188,34 +204,74 @@ export default function MinhaListaPage() {
   // ── SimuladoCard component ───────────────────────────────────
   function SimuladoCard({ s }: { s: SimuladoItem }) {
     return (
-      <div className="group p-4 rounded-lg border border-white/10 bg-card hover:bg-secondary transition-colors">
+      <div className="group p-4 rounded-lg border border-border bg-card hover:bg-secondary transition-colors">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white truncate">{s.titulo}</p>
+            <p className="text-sm font-medium text-foreground truncate">{s.titulo}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
               {questaoCount(s)} questão{questaoCount(s) !== 1 ? 'ões' : ''} · {formatDate(s.created_at)}
             </p>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="shrink-0 p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors">
+              <button className="shrink-0 p-1 rounded hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-colors">
                 <MoreHorizontal size={15} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-card border-border text-sm">
               <DropdownMenuItem
                 onClick={() => router.push(`/simulados/${s.id}`)}
-                className="gap-2 cursor-pointer hover:bg-white/5"
+                className="gap-2 cursor-pointer"
               >
                 <Eye size={13} /> Ver / Resolver
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => exportPDF(s)}
-                className="gap-2 cursor-pointer hover:bg-white/5"
+                className="gap-2 cursor-pointer"
               >
                 <Download size={13} /> Exportar PDF
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuSeparator />
+
+              {/* Mover para pasta */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="gap-2">
+                  <FolderInput size={13} /> Mover para pasta
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="bg-card border-border">
+                  <DropdownMenuItem
+                    onClick={() => moveSimuladoToPasta(s.id, null)}
+                    className="gap-2 cursor-pointer"
+                  >
+                    <FolderMinus size={13} className="text-muted-foreground" />
+                    Sem pasta
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {folders.map(f => (
+                    <DropdownMenuItem
+                      key={f.id}
+                      onClick={() => moveSimuladoToPasta(s.id, f.id)}
+                      className={cn('gap-2 cursor-pointer', s.folder_id === f.id && 'text-accent')}
+                    >
+                      <Folder size={13} />
+                      {f.nome}
+                      {s.folder_id === f.id && <Check size={11} className="ml-auto" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              {/* Remover da pasta */}
+              {s.folder_id && (
+                <DropdownMenuItem
+                  onClick={() => moveSimuladoToPasta(s.id, null)}
+                  className="gap-2 cursor-pointer text-orange-400 hover:text-orange-300"
+                >
+                  <FolderMinus size={13} /> Remover da pasta
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => deleteSimulado(s.id)}
                 className="gap-2 cursor-pointer text-red-400 hover:bg-red-400/10 focus:text-red-400"
@@ -256,7 +312,7 @@ export default function MinhaListaPage() {
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">
               02 / Personalização
             </p>
-            <h1 className="text-5xl md:text-6xl font-[var(--font-bebas)] tracking-tight text-white">
+            <h1 className="text-5xl md:text-6xl font-[var(--font-bebas)] tracking-tight text-foreground">
               Minha Lista
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -267,7 +323,7 @@ export default function MinhaListaPage() {
             <Button
               variant="outline"
               onClick={() => setCreatingFolder(true)}
-              className="border-white/10 text-muted-foreground hover:border-accent hover:text-accent text-xs font-semibold gap-2"
+              className="border-border text-muted-foreground hover:border-accent hover:text-accent text-xs font-semibold gap-2"
             >
               <FolderPlus size={13} /> Nova pasta
             </Button>
@@ -286,8 +342,8 @@ export default function MinhaListaPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar simulado..."
-            className="w-full max-w-sm bg-card border border-white/10 rounded-lg px-4 py-2
-                       text-sm text-white placeholder:text-muted-foreground
+            className="w-full max-w-sm bg-card border border-border rounded-lg px-4 py-2
+                       text-sm text-foreground placeholder:text-muted-foreground
                        focus:outline-none focus:border-accent/50 transition-colors font-mono"
           />
         </div>
@@ -302,20 +358,25 @@ export default function MinhaListaPage() {
           </h2>
           <button
             onClick={() => router.push('/minha-lista/salvos')}
-            className="w-full flex items-center justify-between p-4 rounded-lg
-                       border border-border bg-card hover:border-accent/50
-                       hover:bg-accent/5 transition-all duration-200"
+            className="rounded-lg border border-border bg-card p-3
+                       hover:border-accent/50 transition-all duration-200
+                       cursor-pointer flex items-center justify-between gap-3"
           >
-            <div className="flex items-center gap-3">
-              <BookmarkCheck size={16} className="text-accent" />
-              <span className="text-sm font-medium text-foreground">
-                Questões Salvas
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {savedCount} questões
-              </span>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-md bg-accent/10 border border-accent/20
+                              flex items-center justify-center shrink-0">
+                <BookmarkCheck size={15} className="text-accent" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  Questões Salvas
+                </p>
+                <p className="text-xs text-muted-foreground font-mono">
+                  {savedCount} questões
+                </p>
+              </div>
             </div>
-            <ChevronRight size={16} className="text-muted-foreground" />
+            <ChevronRight size={14} className="text-muted-foreground shrink-0" />
           </button>
         </div>
 
@@ -332,12 +393,12 @@ export default function MinhaListaPage() {
                 if (e.key === 'Escape') { setCreatingFolder(false); setNewFolderName('') }
               }}
               placeholder="Nome da pasta..."
-              className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-muted-foreground"
+              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
             <button onClick={createFolder} className="text-accent hover:text-accent/80 transition-colors">
               <Check size={15} />
             </button>
-            <button onClick={() => { setCreatingFolder(false); setNewFolderName('') }} className="text-muted-foreground hover:text-white transition-colors">
+            <button onClick={() => { setCreatingFolder(false); setNewFolderName('') }} className="text-muted-foreground hover:text-foreground transition-colors">
               <X size={15} />
             </button>
           </div>
@@ -349,7 +410,7 @@ export default function MinhaListaPage() {
           </div>
         ) : simulados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <GraduationCap size={48} className="text-white/10" />
+            <GraduationCap size={48} className="text-foreground/10" />
             <p className="font-mono text-sm text-muted-foreground text-center">
               Nenhum simulado ainda.
             </p>
@@ -373,7 +434,7 @@ export default function MinhaListaPage() {
                 <div key={folder.id}>
                   {/* Folder header */}
                   <div
-                    className="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-card
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card
                                hover:bg-secondary cursor-pointer transition-colors group mb-2"
                     onClick={() => setOpenFolderId(isOpen ? null : folder.id)}
                   >
@@ -392,10 +453,10 @@ export default function MinhaListaPage() {
                             if (e.key === 'Enter') renameFolder(folder.id)
                             if (e.key === 'Escape') setRenamingId(null)
                           }}
-                          className="bg-transparent text-sm text-white outline-none border-b border-accent w-full"
+                          className="bg-transparent text-sm text-foreground outline-none border-b border-accent w-full"
                         />
                       ) : (
-                        <p className="text-sm font-medium text-white truncate">{folder.nome}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{folder.nome}</p>
                       )}
                       <p className="text-[10px] text-muted-foreground font-mono">
                         {items.length} simulado{items.length !== 1 ? 's' : ''}
@@ -411,7 +472,7 @@ export default function MinhaListaPage() {
                     >
                       <button
                         onClick={() => { setRenamingId(folder.id); setRenameValue(folder.nome) }}
-                        className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                        className="p-1 rounded hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <Pencil size={12} />
                       </button>
@@ -426,7 +487,7 @@ export default function MinhaListaPage() {
 
                   {/* Simulados na pasta */}
                   {isOpen && (
-                    <div className="ml-4 pl-4 border-l border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-2">
+                    <div className="ml-4 pl-4 border-l border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-2">
                       {items.length === 0 ? (
                         <p className="text-xs text-muted-foreground py-3 col-span-full font-mono">
                           Pasta vazia
@@ -458,7 +519,7 @@ export default function MinhaListaPage() {
         )}
 
         {/* ── Colophon ─────────────────────────────────────── */}
-        <footer className="mt-20 border-t border-white/10 pt-10 pb-8">
+        <footer className="mt-20 border-t border-border pt-10 pb-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div>
               <h4 className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted-foreground mb-3">Plataforma</h4>

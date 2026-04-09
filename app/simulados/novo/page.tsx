@@ -153,7 +153,7 @@ export default function SimuladoNovoPage() {
 
   return (
     <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mx-auto w-full max-w-[1200px] px-6 py-8 md:px-10">
+      <div className="mx-auto w-full max-w-[1400px] px-6 py-8 md:px-10" style={{ zoom: 0.82 }}>
 
         {/* Voltar */}
         <div className="mb-6">
@@ -173,7 +173,7 @@ export default function SimuladoNovoPage() {
             onChange={e => setTitle(e.target.value)}
             className="bg-transparent text-4xl md:text-5xl font-[var(--font-bebas)] tracking-tight
                        text-foreground outline-none border-b border-transparent
-                       hover:border-white/10 focus:border-accent transition-colors
+                       hover:border-border focus:border-accent transition-colors
                        w-full sm:max-w-[500px]"
             placeholder="Nome do simulado"
           />
@@ -181,7 +181,7 @@ export default function SimuladoNovoPage() {
             <select
               value={folderId}
               onChange={e => setFolderId(e.target.value)}
-              className="self-start text-xs bg-card border border-white/10 rounded-lg px-3 py-2
+              className="self-start text-xs bg-card border border-border rounded-lg px-3 py-2
                          text-muted-foreground focus:outline-none focus:border-accent/50
                          font-mono hover:border-accent/30 transition-colors"
             >
@@ -205,7 +205,7 @@ export default function SimuladoNovoPage() {
               variant="outline"
               onClick={handleExport}
               disabled={exporting || !questions.length}
-              className="border-white/10 text-muted-foreground hover:border-accent hover:text-accent
+              className="border-border text-muted-foreground hover:border-accent hover:text-accent
                          transition-all text-xs font-semibold gap-2 disabled:opacity-40"
             >
               {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
@@ -224,7 +224,7 @@ export default function SimuladoNovoPage() {
 
         {questions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <GraduationCap size={48} className="text-white/10" />
+            <GraduationCap size={48} className="text-foreground/10" />
             <p className="font-mono text-sm text-muted-foreground">
               Nenhuma questão adicionada ainda
             </p>
@@ -265,19 +265,19 @@ export default function SimuladoNovoPage() {
             {/* Sidebar de estatísticas */}
             <div className="flex flex-col gap-4">
               {/* Total */}
-              <div className="rounded-[12px] border border-white/10 bg-card p-4">
+              <div className="rounded-[12px] border border-border bg-card p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2">
                   Total
                 </p>
                 <div className="flex items-center gap-2">
                   <FileText size={18} className="text-accent" />
-                  <span className="text-2xl font-bold text-white">{questions.length}</span>
+                  <span className="text-2xl font-bold text-foreground">{questions.length}</span>
                   <span className="text-sm text-muted-foreground">questões</span>
                 </div>
               </div>
 
               {/* Por dificuldade */}
-              <div className="rounded-[12px] border border-white/10 bg-card p-4">
+              <div className="rounded-[12px] border border-border bg-card p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">
                   Por dificuldade
                 </p>
@@ -306,7 +306,7 @@ export default function SimuladoNovoPage() {
               </div>
 
               {/* Por assunto */}
-              <div className="rounded-[12px] border border-white/10 bg-card p-4">
+              <div className="rounded-[12px] border border-border bg-card p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">
                   Por assunto
                 </p>
@@ -362,15 +362,15 @@ function SortableQuestionRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-start gap-3 rounded-[10px] border border-white/10 bg-card
+      className="flex items-start gap-3 rounded-[10px] border border-border bg-card
                  p-4 hover:border-accent/30 transition-all group"
     >
       {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
-        className="shrink-0 mt-0.5 cursor-grab active:cursor-grabbing text-white/20
-                   hover:text-white/50 transition-colors"
+        className="shrink-0 mt-0.5 cursor-grab active:cursor-grabbing text-foreground/20
+                   hover:text-foreground/50 transition-colors"
         tabIndex={-1}
       >
         <GripVertical size={16} />
@@ -385,12 +385,12 @@ function SortableQuestionRow({
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap gap-1.5 mb-1.5">
           {question.year > 0 && (
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-white/5 text-muted-foreground border border-white/10">
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-white/5 text-muted-foreground border border-border">
               {question.year}
             </span>
           )}
           {question.institution && (
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase bg-white/5 text-muted-foreground border border-white/10">
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase bg-white/5 text-muted-foreground border border-border">
               {question.institution}
             </span>
           )}
@@ -417,7 +417,7 @@ function SortableQuestionRow({
       {/* Remover */}
       <button
         onClick={onRemove}
-        className="shrink-0 mt-0.5 text-white/20 hover:text-red-400 transition-colors"
+        className="shrink-0 mt-0.5 text-foreground/20 hover:text-red-400 transition-colors"
         title="Remover"
       >
         <X size={14} />

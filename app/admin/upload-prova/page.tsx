@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { CropSelector } from '@/components/admin/CropSelector'
 import { SVGReconstructPanel } from '@/components/admin/SVGReconstructPanel'
+import { DIFICULDADE_LABEL } from '@/lib/constants/dificuldade'
 
 interface Instituicao { id: string; nome: string; sigla: string | null }
 interface VisualElement {
@@ -667,9 +668,9 @@ function QuestionReviewCard({ question: q, index, cropMode, sessionId, onUpdate,
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Dificuldade</label>
-              <select value={q.difficulty} onChange={e => onUpdate({ difficulty: e.target.value as 'facil' | 'medio' | 'dificil' })}
+              <select value={q.difficulty} onChange={e => onUpdate({ difficulty: e.target.value as 'facil' | 'medio' | 'dificil' | 'muito_dificil' })}
                 className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-accent">
-                <option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option>
+                <option value="facil">{DIFICULDADE_LABEL.facil}</option><option value="medio">{DIFICULDADE_LABEL.medio}</option><option value="dificil">{DIFICULDADE_LABEL.dificil}</option><option value="muito_dificil">{DIFICULDADE_LABEL.muito_dificil}</option>
               </select>
             </div>
             <div className="space-y-1">

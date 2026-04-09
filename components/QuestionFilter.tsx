@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Search } from 'lucide-react'
+import { DIFICULDADE_LABEL } from '@/lib/constants/dificuldade'
 
 export function QuestionFilter() {
   return (
@@ -49,9 +50,10 @@ export function QuestionFilter() {
               <SelectValue placeholder="Todas" />
             </SelectTrigger>
             <SelectContent className="bg-background border-accent text-foreground">
-              <SelectItem value="facil">Fácil</SelectItem>
-              <SelectItem value="medio">Médio</SelectItem>
-              <SelectItem value="dificil">Difícil</SelectItem>
+              <SelectItem value="facil">{DIFICULDADE_LABEL.facil}</SelectItem>
+              <SelectItem value="medio">{DIFICULDADE_LABEL.medio}</SelectItem>
+              <SelectItem value="dificil">{DIFICULDADE_LABEL.dificil}</SelectItem>
+              <SelectItem value="muito_dificil">{DIFICULDADE_LABEL.muito_dificil}</SelectItem>
             </SelectContent>
           </Select>
         </div>

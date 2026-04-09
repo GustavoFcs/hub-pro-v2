@@ -108,7 +108,7 @@ export default function SimuladosPage() {
           </div>
         ) : simulados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <GraduationCap size={48} className="text-white/10" />
+            <GraduationCap size={48} className="text-foreground/10" />
             <p className="font-mono text-sm text-muted-foreground">Nenhum simulado criado ainda</p>
             <Link href="/simulados/novo">
               <Button variant="outline" className="border-accent text-accent hover:bg-accent hover:text-black transition-all text-xs font-semibold gap-2">
@@ -149,21 +149,21 @@ function SimuladoCard({
   const date = new Date(simulado.created_at).toLocaleDateString('pt-BR')
 
   return (
-    <div className="rounded-[12px] border border-white/10 bg-card p-6
+    <div className="rounded-[12px] border border-border bg-card p-6
                     hover:border-accent/40 transition-all duration-300">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
           <div className="flex items-center gap-3">
             <FileText size={16} className="text-accent shrink-0" />
-            <h3 className="text-base font-bold text-white truncate">{simulado.titulo}</h3>
+            <h3 className="text-base font-bold text-foreground truncate">{simulado.titulo}</h3>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <span className="font-mono text-[10px] text-muted-foreground">
               {simulado._questoesCount} questão{simulado._questoesCount !== 1 ? 'ões' : ''}
             </span>
-            <span className="text-white/10">·</span>
+            <span className="text-foreground/10">·</span>
             <span className="font-mono text-[10px] text-muted-foreground">{date}</span>
-            <span className="text-white/10">·</span>
+            <span className="text-foreground/10">·</span>
             <span className={cn('font-mono text-[10px] font-bold', status.color)}>
               {status.label}
             </span>
@@ -178,7 +178,7 @@ function SimuladoCard({
           <button
             onClick={onDelete}
             className="flex items-center justify-center w-8 h-8 rounded-lg
-                       border border-white/10 text-muted-foreground
+                       border border-border text-muted-foreground
                        hover:border-red-500/40 hover:text-red-400 transition-all"
             title="Excluir"
           >

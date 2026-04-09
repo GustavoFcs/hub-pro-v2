@@ -81,8 +81,8 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, {
   color: string
   bg: string
 }> = {
-  facil:          { label: 'Fácil',          color: 'text-green-400',  bg: 'bg-green-400/10' },
-  medio:          { label: 'Médio',          color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-  dificil:        { label: 'Difícil',        color: 'text-orange-400', bg: 'bg-orange-400/10' },
-  muito_dificil:  { label: 'Muito Difícil',  color: 'text-red-400',    bg: 'bg-red-400/10' },
+  facil:          { label: 'Nivelamento',             color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+  medio:          { label: 'Consolidação',            color: 'text-blue-400',    bg: 'bg-blue-400/10' },
+  dificil:        { label: 'Aprofundamento',          color: 'text-orange-400',  bg: 'bg-orange-400/10' },
+  muito_dificil:  { label: 'Especialização Avançada', color: 'text-red-400',     bg: 'bg-red-400/10' },
 }

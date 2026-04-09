@@ -134,7 +134,7 @@ function QuestionItem({
           </span>
         )}
         {diffCfg && (
-          <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono opacity-0 pointer-events-none select-none', diffCfg.bg, diffCfg.color)}>
+          <span className={cn('px-2 py-0.5 rounded text-[10px] font-mono', diffCfg.bg, diffCfg.color)}>
             {diffCfg.label}
           </span>
         )}
@@ -158,18 +158,18 @@ function QuestionItem({
 
       {/* Imagem */}
       {question.imagem_tipo === 'crop' && question.imagem_url && question.imagem_url !== 'skipped' && (
-        <div className="my-3 rounded-lg border border-border">
+        <div className="my-3 rounded-lg border border-border overflow-hidden">
           <img
             src={question.imagem_url}
             alt="Figura da questão"
-            className="w-full object-contain bg-white"
+            className="w-full object-contain"
           />
         </div>
       )}
       {question.imagem_tipo === 'reconstruida' && question.imagem_svg && (
         <div className="my-3">
           <div
-            className="rounded-lg border border-border bg-white p-4 flex items-center justify-center"
+            className="rounded-lg border border-border bg-white p-4 flex items-center justify-center overflow-hidden"
             dangerouslySetInnerHTML={{ __html: question.imagem_svg }}
           />
           <p className="mt-1 text-[10px] text-muted-foreground font-mono italic">

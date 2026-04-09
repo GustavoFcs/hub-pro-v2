@@ -202,26 +202,22 @@ function buildSimuladoHTML(simulado: {
         .gabarito-ans { color: #333; }
         .gabarito-anulada { color: #c00; font-weight: bold; font-size: 8pt; }
 
-        .watermark {
+        .watermark-frame {
           position: fixed;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
+          top: 12mm; left: 12mm; right: 12mm; bottom: 12mm;
+          border: 0.5pt solid rgba(0,0,0,0.08);
           pointer-events: none;
           z-index: 0;
-          transform: rotate(-45deg);
-          font-size: 22pt;
-          font-weight: bold;
-          font-family: Arial, sans-serif;
-          color: rgba(0,0,0,0.045);
-          letter-spacing: 0.15em;
-          line-height: 2.8;
-          text-align: center;
-          white-space: nowrap;
-          overflow: hidden;
+        }
+        .watermark-label {
+          position: fixed;
+          bottom: 8mm; right: 14mm;
+          font-family: 'Courier New', monospace;
+          font-size: 6.5pt;
+          color: rgba(0,0,0,0.12);
+          letter-spacing: 0.2em;
+          pointer-events: none;
+          z-index: 0;
           user-select: none;
         }
 
@@ -230,17 +226,8 @@ function buildSimuladoHTML(simulado: {
       </style>
     </head>
     <body>
-      <div class="watermark" aria-hidden="true">
-        DERELICTQB DERELICTQB DERELICTQB DERELICTQB DERELICTQB<br/>
-        DERELICTQB DERELICTQB DERELICTQB DERELICTQB DERELICTQB<br/>
-        DERELICTQB DERELICTQB DERELICTQB DERELICTQB DERELICTQB<br/>
-        DERELICTQB DERELICTQB DERELICTQB DERELICTQB DERELICTQB<br/>
-        DERELICTQB DERELICTQB DERELICTQB DERELICTQB DERELICTQB<br/>
-        DERELICTQB DERELICTQB DERELICTQB DERELICTQB DERELICTQB<br/>
-        DERELICTQB DERELICTQB DERELICTQB DERELICTQB DERELICTQB<br/>
-        DERELICTQB DERELICTQB DERELICTQB DERELICTQB DERELICTQB<br/>
-        DERELICTQB DERELICTQB DERELICTQB DERELICTQB DERELICTQB<br/>
-      </div>
+      <div class="watermark-frame" aria-hidden="true"></div>
+      <div class="watermark-label" aria-hidden="true">DERELICTQB</div>
       <div class="header">
         <h1>${escapeHtml(simulado.title ?? 'Simulado')}</h1>
         <p>${simulado.questions.length} questões</p>

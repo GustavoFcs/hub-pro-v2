@@ -46,17 +46,17 @@ const FILTER_TABS: Array<{ id: TabId; label: string; icon: typeof BookOpen }> = 
 type FilterNode = { label: string; children?: string[] }
 
 const DIFICULDADE_ITEMS: FilterNode[] = [
-  { label: "Fácil" },
-  { label: "Médio" },
-  { label: "Difícil" },
-  { label: "Muito Difícil" },
+  { label: "Nivelamento" },
+  { label: "Consolidação" },
+  { label: "Aprofundamento" },
+  { label: "Especialização Avançada" },
 ]
 
 const DIFFICULTY_MAP: Record<string, 'facil' | 'medio' | 'dificil' | 'muito_dificil'> = {
-  'Fácil': 'facil',
-  'Médio': 'medio',
-  'Difícil': 'dificil',
-  'Muito Difícil': 'muito_dificil',
+  'Nivelamento': 'facil',
+  'Consolidação': 'medio',
+  'Aprofundamento': 'dificil',
+  'Especialização Avançada': 'muito_dificil',
 }
 
 interface FilterData {
@@ -771,7 +771,7 @@ export default function BancoQuestoesPage() {
           <Button
             onClick={handleCriarLista}
             disabled={isLoading}
-            className="w-full h-12 rounded-[12px] bg-accent text-white text-sm font-mono uppercase tracking-[0.2em] hover:bg-[#E55A2B] transition-all duration-300 gap-2 shadow-[0_0_40px_rgba(229,90,43,0.12)]"
+            className="w-full h-12 rounded-[12px] bg-accent text-accent-foreground text-sm font-mono uppercase tracking-[0.2em] hover:bg-[#E55A2B] transition-all duration-300 gap-2 shadow-[0_0_40px_rgba(229,90,43,0.12)]"
           >
             {isLoading
               ? <Loader2 size={16} className="animate-spin" />

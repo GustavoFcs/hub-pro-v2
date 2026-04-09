@@ -14,7 +14,6 @@ import {
   ArrowLeft,
   ShieldCheck,
   Brain,
-  GraduationCap,
 } from 'lucide-react'
 
 const adminMenuItems = [
@@ -22,7 +21,6 @@ const adminMenuItems = [
   { label: 'Upload de Prova', href: '/admin/upload-prova', icon: UploadCloud },
   { label: 'Gerenciar Provas', href: '/admin/gerenciar-provas', icon: FileEdit },
   { label: 'Revisão de IA', href: '/admin/revisao-ia', icon: Brain },
-  { label: 'Simulados', href: '/minha-lista', icon: GraduationCap },
 ]
 
 export function AdminSidebar() {
@@ -33,7 +31,7 @@ export function AdminSidebar() {
     <aside className="w-64 h-screen fixed left-0 top-0 bg-sidebar border-r border-accent flex flex-col p-6 z-50">
       <div className="flex items-center gap-3 mb-10 px-2">
         <ShieldCheck className="text-accent" size={24} />
-        <h2 className="text-xl font-bold text-white tracking-tight uppercase">ADMIN</h2>
+        <h2 className="text-xl font-bold text-foreground tracking-tight uppercase">ADMIN</h2>
       </div>
 
       <nav className="flex-1 flex flex-col gap-2">
